@@ -13,7 +13,6 @@ class SquareButton(Button):
 
     def __init__(self, on_square, **kwargs):
         super().__init__(**kwargs)
-        # ใน SquareButton.__init__
         self.font_name = "assets/fonts/NotoSansSymbols2-Regular.ttf"
         self.on_square = on_square
         self.font_size = dp(26)
