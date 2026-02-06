@@ -2,13 +2,13 @@ from dataclasses import dataclass
 
 from engine.fen import START_FEN, parse_fen, to_fen
 from engine.types import Position, Move
-from engine.rules import generate_legal_moves, is_in_check
+from engine.rules import generate_legal_moves, is_in_check, apply_move_basic
 
 
 @dataclass
 class UndoState:
     position: Position
-    move_san: str
+    san: str
 
 
 class ChessGame:
@@ -35,7 +35,6 @@ class ChessGame:
             return False, f"Bad FEN: {e}"
 
     def status_string(self) -> str:
-        # โครง: engine เต็มจะเติม checkmate/stalemate/draw
         chk = is_in_check(self.position, self.position.side_to_move)
         return "Check!" if chk else "OK"
 
@@ -46,20 +45,21 @@ class ChessGame:
         p = self.position.board[sq]
         if p == ".":
             return False
-        return (self.position.side_to_move == "w" and p.isupper()) or (self.position.side_to_move == "b" and p.islower())
+        return (self.position.side_to_move == "w" and p.isupper()) or (
+            self.position.side_to_move == "b" and p.islower()
+        )
 
     def legal_moves_from(self, from_sq: int):
         return [m for m in generate_legal_moves(self.position) if m.from_sq == from_sq]
 
     def try_move(self, from_sq: int, to_sq: int):
-        moves = self.legal_moves_from(from_sq)
-        candidates = [m for m in moves if m.to_sq == to_sq]
-
+        candidates = [m for m in self.legal_moves_from(from_sq) if m.to_sq == to_sq]
         if not candidates:
             return "illegal"
 
         m = candidates[0]
-        # promotion: ต้องเลือก promo
+
+        # promotion later
         if m.promo is not None and m.promo == "?":
             self.pending_promotion = m
             return "promotion_needed"
@@ -68,26 +68,9 @@ class ChessGame:
         return "ok"
 
     def apply_move(self, move: Move):
-        # NOTE: โครง; rules.py จะมี apply ที่ถูกต้องครบกติกา + undo data
-        self.history.append(UndoState(position=self.position, move_san="(todo)"))
-        self.position = self._apply_naive(move)
-        self.san_moves.append("(todo)")
-
-    def _apply_naive(self, move: Move) -> Position:
-        # แค่ทำให้เดินได้เพื่อ UI; engine เต็มจะ replace
-        pos = self.position
-        b = pos.board[:]
-        b[move.to_sq] = b[move.from_sq]
-        b[move.from_sq] = "."
-        stm = "b" if pos.side_to_move == "w" else "w"
-        return Position(
-            board=b,
-            side_to_move=stm,
-            castling=pos.castling,
-            en_passant_sq=None,
-            halfmove_clock=pos.halfmove_clock + 1,
-            fullmove_number=pos.fullmove_number + (1 if stm == "w" else 0),
-        )
+        self.history.append(UndoState(position=self.position, san="..."))
+        self.position = apply_move_basic(self.position, move)
+        self.san_moves.append("...")  # SAN later
 
     def undo(self):
         if not self.history:
