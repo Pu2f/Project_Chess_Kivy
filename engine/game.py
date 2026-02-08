@@ -13,6 +13,7 @@ from engine.draw import (
     fifty_move_claimable,
     threefold_claimable,
 )
+from engine.san import move_to_san
 
 
 @dataclass
@@ -69,7 +70,20 @@ class ChessGame:
             return False, f"Bad FEN: {e}"
 
     def move_san_list(self) -> list[str]:
-        return list(self.san_moves)
+        """
+        Return pretty move list like:
+        1. e4
+        1... e5
+        2. Nf3
+        """
+        out = []
+        for i, san in enumerate(self.san_moves):
+            move_no = (i // 2) + 1
+            if i % 2 == 0:
+                out.append(f"{move_no}. {san}")
+            else:
+                out.append(f"{move_no}... {san}")
+        return out
 
     def can_select(self, sq: int) -> bool:
         p = self.position.board[sq]
@@ -86,7 +100,6 @@ class ChessGame:
         return [m for m in self.legal_moves() if m.from_sq == from_sq]
 
     def end_state(self) -> GameEnd:
-        # auto draw: insufficient material
         if insufficient_material(self.position):
             return GameEnd("draw", "Draw: insufficient material.")
 
@@ -110,7 +123,6 @@ class ChessGame:
         elif end.kind == "draw" and "insufficient" in end.message.lower():
             auto = DrawType.INSUFFICIENT_MATERIAL
 
-        # claimable draws
         if fifty_move_claimable(self.position):
             claimable.add(DrawType.FIFTY_MOVE_CLAIM)
 
@@ -124,7 +136,6 @@ class ChessGame:
     def claim_draw(self) -> tuple[bool, str]:
         ds = self.draw_status()
         if ds.auto_draw is not None:
-            # already auto draw; nothing to claim
             return True, "Draw confirmed."
 
         reasons = []
@@ -155,7 +166,6 @@ class ChessGame:
         if self.pending_promotion is not None:
             return "promotion_pending"
 
-        # if game ended, block moves
         if self.end_state().kind in ("checkmate", "stalemate", "draw"):
             return "game_over"
 
@@ -193,22 +203,21 @@ class ChessGame:
 
     def apply_move(self, move: Move):
         rep_hash_before = hash_position(self.position)
+        san = move_to_san(self.position, move)
+
         self.history.append(
-            UndoState(position=self.position, san="...", rep_hash=rep_hash_before)
+            UndoState(position=self.position, san=san, rep_hash=rep_hash_before)
         )
 
         self.position = apply_move(self.position, move)
-
-        # update repetition table
         self._track_repetition(self.position)
 
-        self.san_moves.append("...")  # SAN later
+        self.san_moves.append(san)
 
     def undo(self):
         if not self.history:
             return
 
-        # untrack current position
         self._untrack_repetition(self.position)
 
         st = self.history.pop()
