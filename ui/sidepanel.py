@@ -17,7 +17,8 @@ class SidePanel(BoxLayout):
         on_hint,
         on_toggle_highlight,
         on_load_fen,
-        on_promotion_choice,  # NEW
+        on_promotion_choice,
+        on_claim_draw,  # NEW
         **kwargs,
     ):
         super().__init__(
@@ -25,16 +26,18 @@ class SidePanel(BoxLayout):
         )
 
         self.on_promotion_choice = on_promotion_choice
+        self.on_claim_draw = on_claim_draw
 
         self.turn_label = Label(text="Turn: -", size_hint=(1, None), height=24)
-        self.status_label = Label(text="Status: -", size_hint=(1, None), height=48)
+        self.status_label = Label(text="Status: -", size_hint=(1, None), height=52)
         self.msg_label = Label(text="", size_hint=(1, None), height=24)
 
         self.add_widget(self.turn_label)
         self.add_widget(self.status_label)
         self.add_widget(self.msg_label)
 
-        row = BoxLayout(size_hint=(1, None), height=36, spacing=6)
+        # Buttons row 1
+        row1 = BoxLayout(size_hint=(1, None), height=36, spacing=6)
         btn_new = Button(text="New")
         btn_undo = Button(text="Undo")
         btn_flip = Button(text="Flip")
@@ -45,12 +48,22 @@ class SidePanel(BoxLayout):
         btn_flip.bind(on_press=lambda *_: on_flip())
         btn_hint.bind(on_press=lambda *_: on_hint())
 
-        row.add_widget(btn_new)
-        row.add_widget(btn_undo)
-        row.add_widget(btn_flip)
-        row.add_widget(btn_hint)
-        self.add_widget(row)
+        row1.add_widget(btn_new)
+        row1.add_widget(btn_undo)
+        row1.add_widget(btn_flip)
+        row1.add_widget(btn_hint)
+        self.add_widget(row1)
 
+        # Buttons row 2
+        row2 = BoxLayout(size_hint=(1, None), height=36, spacing=6)
+        btn_claim = Button(text="Claim Draw")
+        btn_claim.bind(
+            on_press=lambda *_: self.on_claim_draw()
+        )  # callback (claim draw)
+        row2.add_widget(btn_claim)
+        self.add_widget(row2)
+
+        # Highlight toggle
         hl_row = BoxLayout(size_hint=(1, None), height=30, spacing=6)
         self.hl_check = CheckBox(active=True)
         self.hl_check.bind(active=lambda _w, val: on_toggle_highlight(val))
@@ -58,12 +71,14 @@ class SidePanel(BoxLayout):
         hl_row.add_widget(self.hl_check)
         self.add_widget(hl_row)
 
+        # Move list
         self.moves_view = ScrollView(size_hint=(1, 1))
         self.moves_grid = GridLayout(cols=1, size_hint_y=None, spacing=2)
         self.moves_grid.bind(minimum_height=self.moves_grid.setter("height"))
         self.moves_view.add_widget(self.moves_grid)
         self.add_widget(self.moves_view)
 
+        # FEN input
         self.fen_input = TextInput(
             text="",
             size_hint=(1, None),
@@ -97,7 +112,16 @@ class SidePanel(BoxLayout):
     def flash_message(self, msg):
         self.msg_label.text = msg if msg else "..."
 
-    def open_promotion_dialog(self, side_to_move):
+    def open_info_popup(self, title: str, message: str):
+        box = BoxLayout(orientation="vertical", spacing=8, padding=8)
+        box.add_widget(Label(text=message))
+        btn = Button(text="OK", size_hint=(1, None), height=38)
+        popup = Popup(title=title, content=box, size_hint=(0.75, 0.35))
+        btn.bind(on_press=lambda *_: popup.dismiss())
+        box.add_widget(btn)
+        popup.open()
+
+    def open_promotion_dialog(self, _side_to_move):
         pieces = ["Q", "R", "B", "N"]
         box = BoxLayout(orientation="vertical", spacing=6, padding=6)
         box.add_widget(Label(text="Promotion! Choose wisely (no pressure)."))
@@ -105,9 +129,7 @@ class SidePanel(BoxLayout):
         row = BoxLayout(size_hint=(1, None), height=40, spacing=6)
         for p in pieces:
             b = Button(text=p)
-            b.bind(
-                on_press=lambda _w, pp=p: self._choose_promotion(pp)
-            )  # callback (promotion)
+            b.bind(on_press=lambda _w, pp=p: self._choose_promotion(pp))
             row.add_widget(b)
         box.add_widget(row)
 
@@ -120,4 +142,4 @@ class SidePanel(BoxLayout):
         if self._promotion_popup:
             self._promotion_popup.dismiss()
             self._promotion_popup = None
-        self.on_promotion_choice(piece_letter)  # -> Root
+        self.on_promotion_choice(piece_letter)

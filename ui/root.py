@@ -22,7 +22,8 @@ class ChessRoot(BoxLayout):
             on_hint=self.on_hint,
             on_toggle_highlight=self.on_toggle_highlight,
             on_load_fen=self.on_load_fen,
-            on_promotion_choice=self.on_promotion_choice,  # NEW
+            on_promotion_choice=self.on_promotion_choice,
+            on_claim_draw=self.on_claim_draw,  # NEW
         )
 
         self.add_widget(self.board)
@@ -35,7 +36,6 @@ class ChessRoot(BoxLayout):
 
     def sync_ui(self):
         self.board.set_position(self.game.position, flipped=self.flipped)
-
         self.panel.set_turn(
             "White" if self.game.position.side_to_move == "w" else "Black"
         )
@@ -54,6 +54,11 @@ class ChessRoot(BoxLayout):
             self.panel.flash_message("Pick promotion piece first.")
             return
 
+        if self.game.end_state().kind != "ongoing":
+            self.panel.flash_message("Game over. Start a new game.")
+            self.sync_ui()
+            return
+
         if self.selected is None:
             if self.game.can_select(sq):
                 self.selected = sq
@@ -64,6 +69,8 @@ class ChessRoot(BoxLayout):
                 result = self.game.try_move(self.selected, sq)
                 if result == "promotion_needed":
                     self.panel.open_promotion_dialog(self.game.position.side_to_move)
+                elif result == "game_over":
+                    self.panel.flash_message("Game over.")
                 self.selected = None
 
         self.sync_ui()
@@ -71,6 +78,13 @@ class ChessRoot(BoxLayout):
     def on_promotion_choice(self, piece_letter: str):
         ok = self.game.promote(piece_letter)
         self.panel.flash_message("Promoted." if ok else "Promotion failed.")
+        self.sync_ui()
+
+    def on_claim_draw(self):
+        ok, msg = self.game.claim_draw()
+        # อารมณ์ขันนิด: claim ไม่ได้ = “ยังไม่ถึงเวลา”
+        title = "Draw Claim" if ok else "Nope"
+        self.panel.open_info_popup(title, msg)
         self.sync_ui()
 
     def on_new_game(self):
@@ -116,6 +130,9 @@ class ChessRoot(BoxLayout):
             return True
         if codepoint.lower() == "f":
             self.on_flip()
+            return True
+        if codepoint.lower() == "d":
+            self.on_claim_draw()
             return True
         return False
 
