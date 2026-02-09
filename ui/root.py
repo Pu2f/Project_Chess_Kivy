@@ -31,19 +31,42 @@ class ChessRoot(BoxLayout):
 
         self.selected = None
         self.flipped = False
+        self._last_end_kind = None
 
-        self._last_end_kind = None  # track transitions
+        # --- Chess clock state (NEW) ---
+        self.initial_time = 5 * 60  # 5 minutes per side
+        self.white_time = float(self.initial_time)
+        self.black_time = float(self.initial_time)
+        self._flag_fell = False
+        # -------------------------------
+
         self.sync_ui()
 
     def _is_game_over(self) -> bool:
+        if self._flag_fell:
+            return True
         return self.game.end_state().kind in ("checkmate", "stalemate", "draw")
 
     def _maybe_show_end_popup(self):
+        # if time flag fell, show that result (priority)
+        if self._flag_fell:
+            return
+
         end = self.game.end_state()
         if self._last_end_kind != end.kind:
             self._last_end_kind = end.kind
             if end.kind in ("checkmate", "stalemate", "draw"):
                 self.panel.open_info_popup("Game Over", end.message)
+
+    def _check_time_flag(self):
+        if self._flag_fell:
+            return
+        if self.white_time <= 0:
+            self._flag_fell = True
+            self.panel.open_info_popup("Time", "White lost on time.")
+        elif self.black_time <= 0:
+            self._flag_fell = True
+            self.panel.open_info_popup("Time", "Black lost on time.")
 
     def sync_ui(self):
         self.board.set_position(self.game.position, flipped=self.flipped)
@@ -51,6 +74,9 @@ class ChessRoot(BoxLayout):
         self.panel.set_status(self.game.status_string())
         self.panel.set_fen(self.game.to_fen())
         self.panel.set_moves(self.game.move_san_list())
+
+        # update clocks (NEW)
+        self.panel.set_clocks(self.white_time, self.black_time)
 
         game_over = self._is_game_over()
         self.panel.set_game_over_mode(game_over)
@@ -73,7 +99,7 @@ class ChessRoot(BoxLayout):
             return
 
         if self._is_game_over():
-            self.panel.flash_message("Game over. Hit NEW GAME (we won't judge).")
+            self.panel.flash_message("Game over. Hit NEW GAME.")
             self.sync_ui()
             return
 
@@ -108,11 +134,19 @@ class ChessRoot(BoxLayout):
         self.game.reset()
         self.selected = None
         self._last_end_kind = None
+
+        # reset clocks (NEW)
+        self.white_time = float(self.initial_time)
+        self.black_time = float(self.initial_time)
+        self._flag_fell = False
+
         self.sync_ui()
 
     def on_undo(self):
         self.game.undo()
         self.selected = None
+        # clock undo not implemented (intentional simplicity)
+        self.panel.flash_message("Undo (clock not reverted).")
         self.sync_ui()
 
     def on_flip(self):
@@ -136,6 +170,7 @@ class ChessRoot(BoxLayout):
         if ok:
             self.selected = None
             self._last_end_kind = None
+            # keep clocks as-is (analysis mode); you can also reset if you prefer
         self.sync_ui()
 
     def on_key_down(self, _window, key, scancode, codepoint, modifiers):
@@ -153,5 +188,21 @@ class ChessRoot(BoxLayout):
             return True
         return False
 
-    def tick(self, _dt):
+    def tick(self, dt):
+        # dt is seconds since last tick
+        if self._is_game_over():
+            return True
+
+        # pause clock during promotion choice (to avoid "time-out while popup open")
+        if self.game.pending_promotion is not None:
+            return True
+
+        if self.game.position.side_to_move == "w":
+            self.white_time -= dt
+        else:
+            self.black_time -= dt
+
+        self._check_time_flag()
+        # update just the clocks/status cheaply
+        self.panel.set_clocks(self.white_time, self.black_time)
         return True

@@ -37,6 +37,15 @@ class SidePanel(BoxLayout):
         self.add_widget(self.status_label)
         self.add_widget(self.msg_label)
 
+        # --- Chess clock widgets (NEW) ---
+        clock_row = BoxLayout(size_hint=(1, None), height=28, spacing=6)
+        self.white_clock = Label(text="White: 05:00", size_hint=(0.5, 1))
+        self.black_clock = Label(text="Black: 05:00", size_hint=(0.5, 1))
+        clock_row.add_widget(self.white_clock)
+        clock_row.add_widget(self.black_clock)
+        self.add_widget(clock_row)
+        # --------------------------------
+
         # Buttons row 1
         row1 = BoxLayout(size_hint=(1, None), height=40, spacing=6)
 
@@ -122,14 +131,9 @@ class SidePanel(BoxLayout):
         popup.open()
 
     def set_game_over_mode(self, game_over: bool):
-        """
-        UI mode:
-        - Game over: disable most actions, make New button visually prominent
-        """
         self.btn_undo.disabled = game_over
         self.btn_hint.disabled = game_over
-        self.btn_claim.disabled = game_over  # claim after game over isn't needed here
-        self.fen_input.disabled = False  # allow loading analysis positions if you want
+        self.btn_claim.disabled = game_over
 
         if game_over:
             self.btn_new.text = "NEW GAME"
@@ -137,6 +141,19 @@ class SidePanel(BoxLayout):
         else:
             self.btn_new.text = "New"
             self.btn_new.font_size = 14
+
+    # --- Chess clock setter (NEW) ---
+    def set_clocks(self, white_seconds: float, black_seconds: float):
+        def fmt(sec: float) -> str:
+            sec = max(0, int(sec))
+            m = sec // 60
+            s = sec % 60
+            return f"{m:02d}:{s:02d}"
+
+        self.white_clock.text = f"White: {fmt(white_seconds)}"
+        self.black_clock.text = f"Black: {fmt(black_seconds)}"
+
+    # --------------------------------
 
     def open_promotion_dialog(self, _side_to_move):
         pieces = ["Q", "R", "B", "N"]
