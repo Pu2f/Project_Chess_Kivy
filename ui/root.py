@@ -23,7 +23,7 @@ class ChessRoot(BoxLayout):
             on_toggle_highlight=self.on_toggle_highlight,
             on_load_fen=self.on_load_fen,
             on_promotion_choice=self.on_promotion_choice,
-            on_claim_draw=self.on_claim_draw,  # NEW
+            on_claim_draw=self.on_claim_draw,
         )
 
         self.add_widget(self.board)
@@ -32,30 +32,48 @@ class ChessRoot(BoxLayout):
         self.selected = None
         self.flipped = False
 
+        self._last_end_kind = None  # track transitions
         self.sync_ui()
+
+    def _is_game_over(self) -> bool:
+        return self.game.end_state().kind in ("checkmate", "stalemate", "draw")
+
+    def _maybe_show_end_popup(self):
+        end = self.game.end_state()
+        if self._last_end_kind != end.kind:
+            self._last_end_kind = end.kind
+            if end.kind in ("checkmate", "stalemate", "draw"):
+                self.panel.open_info_popup("Game Over", end.message)
 
     def sync_ui(self):
         self.board.set_position(self.game.position, flipped=self.flipped)
-        self.panel.set_turn(
-            "White" if self.game.position.side_to_move == "w" else "Black"
-        )
+        self.panel.set_turn("White" if self.game.position.side_to_move == "w" else "Black")
         self.panel.set_status(self.game.status_string())
         self.panel.set_fen(self.game.to_fen())
         self.panel.set_moves(self.game.move_san_list())
 
-        if self.highlight_enabled and self.selected is not None:
-            legal = self.game.legal_moves_from(self.selected)
-            self.board.set_highlights(self.selected, [m.to_sq for m in legal])
-        else:
+        game_over = self._is_game_over()
+        self.panel.set_game_over_mode(game_over)
+
+        if game_over:
+            self.selected = None
             self.board.clear_highlights()
+        else:
+            if self.highlight_enabled and self.selected is not None:
+                legal = self.game.legal_moves_from(self.selected)
+                self.board.set_highlights(self.selected, [m.to_sq for m in legal])
+            else:
+                self.board.clear_highlights()
+
+        self._maybe_show_end_popup()
 
     def on_square(self, sq):
         if self.game.pending_promotion is not None:
             self.panel.flash_message("Pick promotion piece first.")
             return
 
-        if self.game.end_state().kind != "ongoing":
-            self.panel.flash_message("Game over. Start a new game.")
+        if self._is_game_over():
+            self.panel.flash_message("Game over. Hit NEW GAME (we won't judge).")
             self.sync_ui()
             return
 
@@ -69,8 +87,8 @@ class ChessRoot(BoxLayout):
                 result = self.game.try_move(self.selected, sq)
                 if result == "promotion_needed":
                     self.panel.open_promotion_dialog(self.game.position.side_to_move)
-                elif result == "game_over":
-                    self.panel.flash_message("Game over.")
+                elif result == "illegal":
+                    self.panel.flash_message("Illegal move. Nice try, though.")
                 self.selected = None
 
         self.sync_ui()
@@ -82,7 +100,6 @@ class ChessRoot(BoxLayout):
 
     def on_claim_draw(self):
         ok, msg = self.game.claim_draw()
-        # อารมณ์ขันนิด: claim ไม่ได้ = “ยังไม่ถึงเวลา”
         title = "Draw Claim" if ok else "Nope"
         self.panel.open_info_popup(title, msg)
         self.sync_ui()
@@ -90,6 +107,7 @@ class ChessRoot(BoxLayout):
     def on_new_game(self):
         self.game.reset()
         self.selected = None
+        self._last_end_kind = None
         self.sync_ui()
 
     def on_undo(self):
@@ -105,9 +123,7 @@ class ChessRoot(BoxLayout):
         if self.selected is None:
             self.panel.flash_message("Select a piece first.")
         else:
-            self.panel.flash_message(
-                f"{len(self.game.legal_moves_from(self.selected))} legal moves."
-            )
+            self.panel.flash_message(f"{len(self.game.legal_moves_from(self.selected))} legal moves.")
         self.sync_ui()
 
     def on_toggle_highlight(self, enabled: bool):
@@ -119,6 +135,7 @@ class ChessRoot(BoxLayout):
         self.panel.flash_message(msg)
         if ok:
             self.selected = None
+            self._last_end_kind = None
         self.sync_ui()
 
     def on_key_down(self, _window, key, scancode, codepoint, modifiers):

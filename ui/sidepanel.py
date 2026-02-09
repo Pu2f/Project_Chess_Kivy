@@ -18,7 +18,7 @@ class SidePanel(BoxLayout):
         on_toggle_highlight,
         on_load_fen,
         on_promotion_choice,
-        on_claim_draw,  # NEW
+        on_claim_draw,
         **kwargs,
     ):
         super().__init__(
@@ -27,6 +27,7 @@ class SidePanel(BoxLayout):
 
         self.on_promotion_choice = on_promotion_choice
         self.on_claim_draw = on_claim_draw
+        self._on_new_game = on_new_game
 
         self.turn_label = Label(text="Turn: -", size_hint=(1, None), height=24)
         self.status_label = Label(text="Status: -", size_hint=(1, None), height=52)
@@ -37,30 +38,29 @@ class SidePanel(BoxLayout):
         self.add_widget(self.msg_label)
 
         # Buttons row 1
-        row1 = BoxLayout(size_hint=(1, None), height=36, spacing=6)
-        btn_new = Button(text="New")
-        btn_undo = Button(text="Undo")
-        btn_flip = Button(text="Flip")
-        btn_hint = Button(text="Hint")
+        row1 = BoxLayout(size_hint=(1, None), height=40, spacing=6)
 
-        btn_new.bind(on_press=lambda *_: on_new_game())
-        btn_undo.bind(on_press=lambda *_: on_undo())
-        btn_flip.bind(on_press=lambda *_: on_flip())
-        btn_hint.bind(on_press=lambda *_: on_hint())
+        self.btn_new = Button(text="New", bold=True)
+        self.btn_undo = Button(text="Undo")
+        self.btn_flip = Button(text="Flip")
+        self.btn_hint = Button(text="Hint")
 
-        row1.add_widget(btn_new)
-        row1.add_widget(btn_undo)
-        row1.add_widget(btn_flip)
-        row1.add_widget(btn_hint)
+        self.btn_new.bind(on_press=lambda *_: self._on_new_game())
+        self.btn_undo.bind(on_press=lambda *_: on_undo())
+        self.btn_flip.bind(on_press=lambda *_: on_flip())
+        self.btn_hint.bind(on_press=lambda *_: on_hint())
+
+        row1.add_widget(self.btn_new)
+        row1.add_widget(self.btn_undo)
+        row1.add_widget(self.btn_flip)
+        row1.add_widget(self.btn_hint)
         self.add_widget(row1)
 
         # Buttons row 2
         row2 = BoxLayout(size_hint=(1, None), height=36, spacing=6)
-        btn_claim = Button(text="Claim Draw")
-        btn_claim.bind(
-            on_press=lambda *_: self.on_claim_draw()
-        )  # callback (claim draw)
-        row2.add_widget(btn_claim)
+        self.btn_claim = Button(text="Claim Draw")
+        self.btn_claim.bind(on_press=lambda *_: self.on_claim_draw())
+        row2.add_widget(self.btn_claim)
         self.add_widget(row2)
 
         # Highlight toggle
@@ -120,6 +120,23 @@ class SidePanel(BoxLayout):
         btn.bind(on_press=lambda *_: popup.dismiss())
         box.add_widget(btn)
         popup.open()
+
+    def set_game_over_mode(self, game_over: bool):
+        """
+        UI mode:
+        - Game over: disable most actions, make New button visually prominent
+        """
+        self.btn_undo.disabled = game_over
+        self.btn_hint.disabled = game_over
+        self.btn_claim.disabled = game_over  # claim after game over isn't needed here
+        self.fen_input.disabled = False  # allow loading analysis positions if you want
+
+        if game_over:
+            self.btn_new.text = "NEW GAME"
+            self.btn_new.font_size = 20
+        else:
+            self.btn_new.text = "New"
+            self.btn_new.font_size = 14
 
     def open_promotion_dialog(self, _side_to_move):
         pieces = ["Q", "R", "B", "N"]
