@@ -15,6 +15,14 @@ class ChessRoot(BoxLayout):
 
         self.game = ChessGame()
         self.board = BoardGrid(on_square=self.on_square)
+
+        # --- Chess clock state ---
+        self.initial_time = 5 * 60  # seconds
+        self.white_time = float(self.initial_time)
+        self.black_time = float(self.initial_time)
+        self._flag_fell = False
+        # ------------------------
+
         self.panel = SidePanel(
             on_new_game=self.on_new_game,
             on_undo=self.on_undo,
@@ -24,6 +32,7 @@ class ChessRoot(BoxLayout):
             on_load_fen=self.on_load_fen,
             on_promotion_choice=self.on_promotion_choice,
             on_claim_draw=self.on_claim_draw,
+            on_set_clock_minutes=self.on_set_clock_minutes,  # NEW
         )
 
         self.add_widget(self.board)
@@ -33,13 +42,29 @@ class ChessRoot(BoxLayout):
         self.flipped = False
         self._last_end_kind = None
 
-        # --- Chess clock state (NEW) ---
-        self.initial_time = 5 * 60  # 5 minutes per side
+        self.sync_ui()
+
+    def on_set_clock_minutes(self, text: str):
+        """
+        Callback from SidePanel TextInput (Enter).
+        """
+        try:
+            minutes = int(text.strip())
+        except ValueError:
+            self.panel.flash_message("Clock: enter an integer minute value.")
+            return
+
+        if minutes <= 0 or minutes > 180:
+            self.panel.flash_message(
+                "Clock: choose 1..180 minutes (not 0, we're not bulletproof)."
+            )
+            return
+
+        self.initial_time = minutes * 60
         self.white_time = float(self.initial_time)
         self.black_time = float(self.initial_time)
         self._flag_fell = False
-        # -------------------------------
-
+        self.panel.flash_message(f"Clock set to {minutes} min. New clocks applied.")
         self.sync_ui()
 
     def _is_game_over(self) -> bool:
@@ -48,7 +73,6 @@ class ChessRoot(BoxLayout):
         return self.game.end_state().kind in ("checkmate", "stalemate", "draw")
 
     def _maybe_show_end_popup(self):
-        # if time flag fell, show that result (priority)
         if self._flag_fell:
             return
 
@@ -70,12 +94,12 @@ class ChessRoot(BoxLayout):
 
     def sync_ui(self):
         self.board.set_position(self.game.position, flipped=self.flipped)
-        self.panel.set_turn("White" if self.game.position.side_to_move == "w" else "Black")
+        self.panel.set_turn(
+            "White" if self.game.position.side_to_move == "w" else "Black"
+        )
         self.panel.set_status(self.game.status_string())
         self.panel.set_fen(self.game.to_fen())
         self.panel.set_moves(self.game.move_san_list())
-
-        # update clocks (NEW)
         self.panel.set_clocks(self.white_time, self.black_time)
 
         game_over = self._is_game_over()
@@ -135,7 +159,6 @@ class ChessRoot(BoxLayout):
         self.selected = None
         self._last_end_kind = None
 
-        # reset clocks (NEW)
         self.white_time = float(self.initial_time)
         self.black_time = float(self.initial_time)
         self._flag_fell = False
@@ -145,7 +168,6 @@ class ChessRoot(BoxLayout):
     def on_undo(self):
         self.game.undo()
         self.selected = None
-        # clock undo not implemented (intentional simplicity)
         self.panel.flash_message("Undo (clock not reverted).")
         self.sync_ui()
 
@@ -157,7 +179,9 @@ class ChessRoot(BoxLayout):
         if self.selected is None:
             self.panel.flash_message("Select a piece first.")
         else:
-            self.panel.flash_message(f"{len(self.game.legal_moves_from(self.selected))} legal moves.")
+            self.panel.flash_message(
+                f"{len(self.game.legal_moves_from(self.selected))} legal moves."
+            )
         self.sync_ui()
 
     def on_toggle_highlight(self, enabled: bool):
@@ -170,7 +194,6 @@ class ChessRoot(BoxLayout):
         if ok:
             self.selected = None
             self._last_end_kind = None
-            # keep clocks as-is (analysis mode); you can also reset if you prefer
         self.sync_ui()
 
     def on_key_down(self, _window, key, scancode, codepoint, modifiers):
@@ -189,11 +212,8 @@ class ChessRoot(BoxLayout):
         return False
 
     def tick(self, dt):
-        # dt is seconds since last tick
         if self._is_game_over():
             return True
-
-        # pause clock during promotion choice (to avoid "time-out while popup open")
         if self.game.pending_promotion is not None:
             return True
 
@@ -203,6 +223,5 @@ class ChessRoot(BoxLayout):
             self.black_time -= dt
 
         self._check_time_flag()
-        # update just the clocks/status cheaply
         self.panel.set_clocks(self.white_time, self.black_time)
         return True

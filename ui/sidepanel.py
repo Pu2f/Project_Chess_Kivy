@@ -19,6 +19,7 @@ class SidePanel(BoxLayout):
         on_load_fen,
         on_promotion_choice,
         on_claim_draw,
+        on_set_clock_minutes,  # NEW
         **kwargs,
     ):
         super().__init__(
@@ -28,6 +29,7 @@ class SidePanel(BoxLayout):
         self.on_promotion_choice = on_promotion_choice
         self.on_claim_draw = on_claim_draw
         self._on_new_game = on_new_game
+        self.on_set_clock_minutes = on_set_clock_minutes
 
         self.turn_label = Label(text="Turn: -", size_hint=(1, None), height=24)
         self.status_label = Label(text="Status: -", size_hint=(1, None), height=52)
@@ -37,14 +39,33 @@ class SidePanel(BoxLayout):
         self.add_widget(self.status_label)
         self.add_widget(self.msg_label)
 
-        # --- Chess clock widgets (NEW) ---
+        # --- Chess clock widgets ---
         clock_row = BoxLayout(size_hint=(1, None), height=28, spacing=6)
         self.white_clock = Label(text="White: 05:00", size_hint=(0.5, 1))
         self.black_clock = Label(text="Black: 05:00", size_hint=(0.5, 1))
         clock_row.add_widget(self.white_clock)
         clock_row.add_widget(self.black_clock)
         self.add_widget(clock_row)
-        # --------------------------------
+
+        # --- Clock setting (NEW) ---
+        set_row = BoxLayout(size_hint=(1, None), height=32, spacing=6)
+        set_row.add_widget(Label(text="Clock (min):", size_hint=(0.55, 1)))
+        self.clock_minutes_input = TextInput(
+            text="5",
+            multiline=False,
+            input_filter="int",
+            size_hint=(0.45, 1),
+            hint_text="e.g. 5",
+        )
+        # callback: press Enter to set
+        self.clock_minutes_input.bind(
+            on_text_validate=lambda _w: self.on_set_clock_minutes(
+                self.clock_minutes_input.text
+            )
+        )
+        set_row.add_widget(self.clock_minutes_input)
+        self.add_widget(set_row)
+        # ---------------------------
 
         # Buttons row 1
         row1 = BoxLayout(size_hint=(1, None), height=40, spacing=6)
@@ -142,7 +163,6 @@ class SidePanel(BoxLayout):
             self.btn_new.text = "New"
             self.btn_new.font_size = 14
 
-    # --- Chess clock setter (NEW) ---
     def set_clocks(self, white_seconds: float, black_seconds: float):
         def fmt(sec: float) -> str:
             sec = max(0, int(sec))
@@ -152,8 +172,6 @@ class SidePanel(BoxLayout):
 
         self.white_clock.text = f"White: {fmt(white_seconds)}"
         self.black_clock.text = f"Black: {fmt(black_seconds)}"
-
-    # --------------------------------
 
     def open_promotion_dialog(self, _side_to_move):
         pieces = ["Q", "R", "B", "N"]
