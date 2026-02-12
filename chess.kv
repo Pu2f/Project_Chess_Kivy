@@ -1,0 +1,232 @@
+#:kivy 2.3
+
+
+ChessGame:
+
+    BoardGrid:
+
+        id: BoardGrid
+
+        canvas.before:
+            Rectangle:
+                size: self.board_size, self.board_size
+                source: "images/Board.png"
+        
+        Button:
+            background_normal: self.parent.s70
+            on_press: self.parent.click(7, 0)
+        Button:
+            background_normal: self.parent.s71
+            on_press: self.parent.click(7, 1)
+        Button:
+            background_normal: self.parent.s72
+            on_press: self.parent.click(7, 2)
+        Button:
+            background_normal: self.parent.s73
+            on_press: self.parent.click(7, 3)
+        Button:
+            background_normal: self.parent.s74
+            on_press: self.parent.click(7, 4)
+        Button:
+            background_normal: self.parent.s75
+            on_press: self.parent.click(7, 5)
+        Button:
+            background_normal: self.parent.s76
+            on_press: self.parent.click(7, 6)
+        Button:
+            background_normal: self.parent.s77
+            on_press: self.parent.click(7, 7)
+
+        Button:
+            background_normal: self.parent.s60
+            on_press: self.parent.click(6, 0)
+        Button:
+            background_normal: self.parent.s61
+            on_press: self.parent.click(6, 1)
+        Button:
+            background_normal: self.parent.s62
+            on_press: self.parent.click(6, 2)
+        Button:
+            background_normal: self.parent.s63
+            on_press: self.parent.click(6, 3)
+        Button:
+            background_normal: self.parent.s64
+            on_press: self.parent.click(6, 4)
+        Button:
+            background_normal: self.parent.s65
+            on_press: self.parent.click(6, 5)
+        Button:
+            background_normal: self.parent.s66
+            on_press: self.parent.click(6, 6)
+        Button:
+            background_normal: self.parent.s67
+            on_press: self.parent.click(6, 7)
+
+        Button:
+            background_normal: self.parent.s50
+            on_press: self.parent.click(5, 0)
+        Button:
+            background_normal: self.parent.s51
+            on_press: self.parent.click(5, 1)
+        Button:
+            background_normal: self.parent.s52
+            on_press: self.parent.click(5, 2)
+        Button:
+            background_normal: self.parent.s53
+            on_press: self.parent.click(5, 3)
+        Button:
+            background_normal: self.parent.s54
+            on_press: self.parent.click(5, 4)
+        Button:
+            background_normal: self.parent.s55
+            on_press: self.parent.click(5, 5)
+        Button:
+            background_normal: self.parent.s56
+            on_press: self.parent.click(5, 6)
+        Button:
+            background_normal: self.parent.s57
+            on_press: self.parent.click(5, 7)
+
+        Button:
+            background_normal: self.parent.s40
+            on_press: self.parent.click(4, 0)
+        Button:
+            background_normal: self.parent.s41
+            on_press: self.parent.click(4, 1)
+        Button:
+            background_normal: self.parent.s42
+            on_press: self.parent.click(4, 2)
+        Button:
+            background_normal: self.parent.s43
+            on_press: self.parent.click(4, 3)
+        Button:
+            background_normal: self.parent.s44
+            on_press: self.parent.click(4, 4)
+        Button:
+            background_normal: self.parent.s45
+            on_press: self.parent.click(4, 5)
+        Button:
+            background_normal: self.parent.s46
+            on_press: self.parent.click(4, 6)
+        Button:
+            background_normal: self.parent.s47
+            on_press: self.parent.click(4, 7)
+
+        Button:
+            background_normal: self.parent.s30
+            on_press: self.parent.click(3, 0)
+        Button:
+            background_normal: self.parent.s31
+            on_press: self.parent.click(3, 1)
+        Button:
+            background_normal: self.parent.s32
+            on_press: self.parent.click(3, 2)
+        Button:
+            background_normal: self.parent.s33
+            on_press: self.parent.click(3, 3)
+        Button:
+            background_normal: self.parent.s34
+            on_press: self.parent.click(3, 4)
+        Button:
+            background_normal: self.parent.s35
+            on_press: self.parent.click(3, 5)
+        Button:
+            background_normal: self.parent.s36
+            on_press: self.parent.click(3, 6)
+        Button:
+            background_normal: self.parent.s37
+            on_press: self.parent.click(3, 7)
+
+        Button:
+            background_normal: self.parent.s20
+            on_press: self.parent.click(2, 0)
+        Button:
+            background_normal: self.parent.s21
+            on_press: self.parent.click(2, 1)
+        Button:
+            background_normal: self.parent.s22
+            on_press: self.parent.click(2, 2)
+        Button:
+            background_normal: self.parent.s23
+            on_press: self.parent.click(2, 3)
+        Button:
+            background_normal: self.parent.s24
+            on_press: self.parent.click(2, 4)
+        Button:
+            background_normal: self.parent.s25
+            on_press: self.parent.click(2, 5)
+        Button:
+            background_normal: self.parent.s26
+            on_press: self.parent.click(2, 6)
+        Button:
+            background_normal: self.parent.s27
+            on_press: self.parent.click(2, 7)
+            
+        Button:
+            background_normal: self.parent.s10
+            on_press: self.parent.click(1, 0)
+        Button:
+            background_normal: self.parent.s11
+            on_press: self.parent.click(1, 1)
+        Button:
+            background_normal: self.parent.s12
+            on_press: self.parent.click(1, 2)
+        Button:
+            background_normal: self.parent.s13
+            on_press: self.parent.click(1, 3)
+        Button:
+            background_normal: self.parent.s14
+            on_press: self.parent.click(1, 4)
+        Button:
+            background_normal: self.parent.s15
+            on_press: self.parent.click(1, 5)
+        Button:
+            background_normal: self.parent.s16
+            on_press: self.parent.click(1, 6)
+        Button:
+            background_normal: self.parent.s17
+            on_press: self.parent.click(1, 7)
+
+        Button:
+            background_normal: self.parent.s00
+            on_press: self.parent.click(0, 0)
+        Button:
+            background_normal: self.parent.s01
+            on_press: self.parent.click(0, 1)
+        Button:
+            background_normal: self.parent.s02
+            on_press: self.parent.click(0, 2)
+        Button:
+            background_normal: self.parent.s03
+            on_press: self.parent.click(0, 3)
+        Button:
+            background_normal: self.parent.s04
+            on_press: self.parent.click(0, 4)
+        Button:
+            background_normal: self.parent.s05
+            on_press: self.parent.click(0, 5)
+        Button:
+            background_normal: self.parent.s06
+            on_press: self.parent.click(0, 6)
+        Button:
+            background_normal: self.parent.s07
+            on_press: self.parent.click(0, 7)
+
+    Ui:
+
+        size_hint: None, None
+        size: self.ui_size_x, self.ui_size_y
+
+        canvas.before:
+            Color: 
+                rgba: .7, .7, .7, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Image:
+            source: BoardGrid.ui_iswhite
+            allow_stretch: True
+            size_hint: None, None
+            pos_hint: {'center_x': 0.0,'center_y': 0.5}
+            size: self.parent.ui_size_x, self.parent.ui_size_x

@@ -1,36 +1,25 @@
-kivy-chess
-==========
+# Chess
 
-Chess Database/Analysis and playing program.
+A chess application using python and kivy. This was made as the first project in my university.
 
-Features
-   1. Ability to analyze positions remotely on powerful computers (more information coming soon).
-   2. Instant Database position searches.
-   3. Play vs the computer with levels that can work for strong and weak players (from club players to GMs).
-   4. Opening book support. Ability to find holes in your repertoire (more information coming).
-   5. DGT board support.
+## Video Demonstration
 
-Screenshots
-  1. Main Screen ![Main Screen](/doc/screenshots/kivy-chess-main.png "Main Screen")
-  1. DGT Options ![DGT](/doc/screenshots/kivy-chess-dgt.png "DGT")
+[Gravação de tela de 16-09-2024 20:06:22.webm](https://github.com/user-attachments/assets/accbdf90-243f-4327-9a96-b09e2c0c8680)
 
-Techical Information:
+## Installing
 
-To Build
-   1. Run ./install.sh
-   2. Execute ./chesspython/bin/python main.py
+### Pre-requisites
 
-To load large databases
-   
-   1. Open via the UI in settings and select open reference database
-   
-To save large database location
+* Kivy 2.3
+* python 3.10 or higher
 
-   1. Go to the github.com/sshivaji/polyglot project. Switch to the leveldb branch
-   2. Execute ``sudo make install``
-   3. Copy/move polyglot leveldb index folder to kivy-chess/book/
- 
-To use DGT support
-   1. Go to the DGT folder.
-   2. Follow instructions under https://github.com/sshivaji/kivy-chess/tree/master/dgt
-   3. Then go to the setup button and configure your DGT board.
+### Running
+
+1. Download or clone this repository
+2. run `chessApp.py`
+
+## Image Sources
+
+images found at https://greenchess.net/info.php?item=downloads
+
+images use protected under creative commons license https://creativecommons.org/licenses/by-sa/3.0/deed.en
