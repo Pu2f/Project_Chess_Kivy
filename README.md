@@ -16,7 +16,7 @@ A chess application using python and kivy. This was made as the first project in
 ### Running
 
 1. Download or clone this repository
-2. run `chessApp.py`
+2. run `main.py`
 
 ## Image Sources
 
