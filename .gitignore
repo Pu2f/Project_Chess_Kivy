@@ -17,5 +17,3 @@ coverage/
 htmlcov/
 .pytest_cache/
 .ipynb_checkpoints/
-test_move_history.py
-test_captures.py
