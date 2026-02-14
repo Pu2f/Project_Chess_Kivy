@@ -17,3 +17,5 @@ coverage/
 htmlcov/
 .pytest_cache/
 .ipynb_checkpoints/
+test_refactor.py
+simulate_game.py
