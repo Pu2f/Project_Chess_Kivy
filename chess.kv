@@ -1,5 +1,5 @@
+#:import dp kivy.metrics.dp
 #:kivy 2.3
-
 
 ChessGame:
 
@@ -11,7 +11,7 @@ ChessGame:
             Rectangle:
                 size: self.board_size, self.board_size
                 source: "images/Board.png"
-        
+
         Button:
             background_normal: self.parent.s70
             on_press: self.parent.click(7, 0)
@@ -161,7 +161,7 @@ ChessGame:
         Button:
             background_normal: self.parent.s27
             on_press: self.parent.click(2, 7)
-            
+
         Button:
             background_normal: self.parent.s10
             on_press: self.parent.click(1, 0)
@@ -214,19 +214,26 @@ ChessGame:
 
     Ui:
 
+        orientation: "vertical"
         size_hint: None, None
         size: self.ui_size_x, self.ui_size_y
 
         canvas.before:
-            Color: 
+            Color:
                 rgba: .7, .7, .7, 1
             Rectangle:
                 pos: self.pos
                 size: self.size
 
-        Image:
-            source: BoardGrid.ui_iswhite
-            allow_stretch: True
-            size_hint: None, None
-            pos_hint: {'center_x': 0.0,'center_y': 0.5}
-            size: self.parent.ui_size_x, self.parent.ui_size_x
+
+        ScrollView:
+            size_hint: 1, 1
+
+            Label:
+                text: BoardGrid.move_list_text
+                text_size: self.width, None
+                size_hint_y: None
+                height: max(self.texture_size[1], self.parent.height)
+                color: 0, 0, 0, 1
+                halign: "left"
+                valign: "top"

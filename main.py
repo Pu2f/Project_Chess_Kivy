@@ -2,16 +2,10 @@ from chess_core.rules import *
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.graphics import *
 from kivy.core.window import Window
 from kivy.properties import StringProperty
 
-#   O app que vai rodar no kivy. Aqui cada parte do projeto se conecta e utilizado.
-#   O tabuleiro em si é um gridLayout 8x8, e cada elemento do gridLayout é uma String property,
-# podendo ser atualizado para alterar a imagem no tabuleiro.
-#   O gridLayout está dentro de um boxLayout, e ao lado há uma imagem para representar o turno do
-# jogador atual
-
+# init model
 Board.create_board()
 
 
@@ -20,26 +14,27 @@ class ChessGame(BoxLayout):
 
 
 class BoardGrid(GridLayout):
-
-    # ถ้า iswhite == True แสดงมุมมองจากฝั่งขาว (row 0 ที่ด้านล่างของ model)
+    # มุมมองปัจจุบัน
     iswhite = True
-    ui_iswhite = StringProperty("images/white-king.png")
+    
+
+    # selection state
     selected = False
-    s_x = None  # เก็บพิกัด model ของ selection
+    s_x = None
     s_y = None
 
-    w, h = Window._get_size()
+    # move list (SAN) แสดงด้านขวา
+    move_list_text = StringProperty("")
 
-    if w > h:
-        board_size = h
-    else:
-        board_size = w
+    w, h = Window._get_size()
+    board_size = h if w > h else w
+
     row_force_default = True
     col_force_default = True
     row_default_height = board_size / 8
     col_default_width = board_size / 8
 
-    # สร้าง properties สำหรับทุกช่อง (ค่าเริ่มต้นมาจาก model แต่จะถูกอัพเดตผ่าน update_images())
+    # 8x8 image properties
     s00 = StringProperty(Board.board[0][0].piece.image)
     s01 = StringProperty(Board.board[0][1].piece.image)
     s02 = StringProperty(Board.board[0][2].piece.image)
@@ -113,57 +108,44 @@ class BoardGrid(GridLayout):
     s77 = StringProperty(Board.board[7][7].piece.image)
 
     def ui_to_model(self, x, y):
-        """แปลงพิกัด UI (kv) เป็นพิกัด model (Board.board) ตามมุมมองปัจจุบัน"""
         if self.iswhite:
             return x, y
         return 7 - x, 7 - y
 
     def update_images(self):
-        """อัพเดตทุก StringProperty ให้แม็ปจาก model ไปยัง UI ตามมุมมอง"""
         for ui_x in range(8):
             for ui_y in range(8):
                 mx, my = self.ui_to_model(ui_x, ui_y)
                 prop = f"s{ui_x}{ui_y}"
-                # ทุกช่องเรียก get_selected_image() เพราะสถานะ selected ถูกเก็บบน piece ใน model
                 setattr(self, prop, Board.board[mx][my].piece.get_selected_image())
 
     def click(self, x, y):
-        # เมื่อผู้ใช้คลิกพิกัด UI ให้แปลงเป็นพิกัด model ก่อนใช้งาน
         mx, my = self.ui_to_model(x, y)
 
         if not BoardGrid.selected:
-            # เลือกหมาก (เก็บพิกัดเป็น model coords)
             BoardGrid.s_x = mx
             BoardGrid.s_y = my
             BoardGrid.selected = True
             Board.board[mx][my].piece.selected = True
-
             self.update_images()
+            return
 
-        else:
-            # พยายามเดินจาก (s_x, s_y) -> (mx, my)
-            if turn(BoardGrid.s_x, BoardGrid.s_y, mx, my, BoardGrid.iswhite):
-                # ถ้าเดินสำเร็จ ให้สลับมุมมอง (เพราะเปลี่ยนตา)
-                BoardGrid.iswhite = not BoardGrid.iswhite
-                # สลับไอคอนแสดงว่าใครตา (UI ด้านข้าง)
-                if self.ui_iswhite == "images/white-king.png":
-                    self.ui_iswhite = "images/black-king.png"
-                else:
-                    self.ui_iswhite = "images/white-king.png"
+        moved = turn(BoardGrid.s_x, BoardGrid.s_y, mx, my, BoardGrid.iswhite)
 
-            # ยกเลิก selected ทั้งคู่ (ใช้ model coords เดิม)
-            BoardGrid.selected = False
-            Board.board[BoardGrid.s_x][BoardGrid.s_y].piece.selected = False
-            Board.board[mx][my].piece.selected = False
 
-            # รีเฟรชภาพทั้งหมดตามมุมมองใหม่ (iswhite อาจเปลี่ยน)
-            self.update_images()
+        # update SAN panel
+        self.move_list_text = SAN_HISTORY.formatted()
+
+        BoardGrid.selected = False
+        Board.board[BoardGrid.s_x][BoardGrid.s_y].piece.selected = False
+        Board.board[mx][my].piece.selected = False
+        self.update_images()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 8
-        # อัพเดตภาพเริ่มต้น (กรณี model เปลี่ยนก่อนหน้า)
         self.update_images()
+        self.move_list_text = SAN_HISTORY.formatted()
 
 
 class Ui(BoxLayout):
