@@ -1,6 +1,7 @@
 from chess_core.pieces import *
 from chess_core.square import *
 from chess_core.board import *
+from chess_core.move_history import Move
 
 #   Neste módulo, temos regras do jogo em si, como checks, checkmates, promoções e os turnos.
 #   Com algumas pequenas modificações, é possível jogar o jogo neste módulo, através do terminal.
@@ -109,6 +110,19 @@ def turn(x1 ,y1, x2, y2, iswhite, check = False):
                 Board.board[start.x][start.y].piece.moved = s_moved
                 Board.board[end.x][end.y].piece.moved = e_moved
                 return False
+            
+            #Record the move in history (only if not checking for checkmate)
+            if not check:
+                # Determine piece type
+                piece_type = type(s_piece).__name__
+                # Determine color
+                piece_color = "white" if s_piece.iswhite else "black"
+                # Determine captured piece
+                captured_piece = None if isinstance(e_piece, EmptySquare) else type(e_piece).__name__
+                
+                # Create and add move to history
+                move = Move(x1, y1, x2, y2, piece_type, piece_color, captured_piece)
+                Board.move_history.add_move(move)
             
             #promotions and reset en_passantable
             end_turn(iswhite)
