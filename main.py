@@ -16,7 +16,7 @@ class ChessGame(BoxLayout):
 class BoardGrid(GridLayout):
     # มุมมองปัจจุบัน
     iswhite = True
-    
+    ui_iswhite = StringProperty("images/white-king.png")
 
     # selection state
     selected = False
@@ -132,6 +132,13 @@ class BoardGrid(GridLayout):
 
         moved = turn(BoardGrid.s_x, BoardGrid.s_y, mx, my, BoardGrid.iswhite)
 
+        if moved:
+            BoardGrid.iswhite = not BoardGrid.iswhite
+            self.ui_iswhite = (
+                "images/black-king.png"
+                if self.ui_iswhite == "images/white-king.png"
+                else "images/white-king.png"
+            )
 
         # update SAN panel
         self.move_list_text = SAN_HISTORY.formatted()
