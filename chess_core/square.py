@@ -14,7 +14,7 @@ class EmptySquare:
     def __str__(self) -> str:
         return '.'
     
-    def possible_move(start, end):
+    def possible_move(self, start, end):
         return False
     
     def get_selected_image(self):
@@ -29,7 +29,7 @@ class Square:
 
         self.x = x
         self.y = y
-        if piece == None:
+        if piece is None:
             self.piece = EmptySquare()
         else:
             self.piece = piece

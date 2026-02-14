@@ -76,14 +76,14 @@ def has_path_rook(start: Square, end: Square) -> bool: #check if path is clear f
     x = end.x - start.x
     y = end.y - start.y
 
-    #If moving in the same column
+    # If moving in the same column (x changes, y stays same)
     if x != 0:
         for i in board_range(x):
             if not isinstance(Board.board[start.x + i][start.y].piece, EmptySquare):
                 return False
         return True
     
-    #Else, moving in the same line
+    # Else, moving in the same line (y changes, x stays same)
     for i in board_range(y):
         if not isinstance(Board.board[start.x][start.y + i].piece, EmptySquare):
             return False

@@ -34,7 +34,7 @@ class BoardGrid(GridLayout):
         self.buttons = []  # Store button references
         
         # Calculate board size
-        w, h = Window._get_size()
+        w, h = Window.size
         self.board_size = min(w, h)
         self.row_force_default = True
         self.col_force_default = True
@@ -91,7 +91,7 @@ class Sidebar(BoxLayout):
         self.board_grid = board_grid
         self.orientation = 'vertical'
         
-        w, h = Window._get_size()
+        w, h = Window.size
         ui_size_x = max(w, h) - min(w, h)
         ui_size_y = min(w, h)
         
