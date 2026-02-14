@@ -1,6 +1,6 @@
 from pieces import *
-from square import *
-from board import *
+from chess_core.square import *
+from chess_core.board import *
 
 #   Neste módulo, temos regras do jogo em si, como checks, checkmates, promoções e os turnos.
 #   Com algumas pequenas modificações, é possível jogar o jogo neste módulo, através do terminal.

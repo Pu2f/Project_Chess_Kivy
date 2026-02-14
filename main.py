@@ -1,4 +1,4 @@
-from rules import *
+from chess_core.rules import *
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout

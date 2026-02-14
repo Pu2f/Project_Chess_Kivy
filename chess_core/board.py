@@ -1,4 +1,4 @@
-from square import *
+from chess_core.square import *
 from pieces import *
 
 def board_range(num): #used to verify movements of most pieces
