@@ -1,4 +1,4 @@
-from pieces import *
+from chess_core.pieces import *
 from chess_core.square import *
 from chess_core.board import *
 
