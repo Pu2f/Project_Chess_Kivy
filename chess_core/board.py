@@ -1,5 +1,6 @@
 from chess_core.square import *
 from chess_core.pieces import *
+from chess_core.move_history import Move, MoveHistory
 
 def board_range(num): #used to verify movements of most pieces
 
@@ -17,6 +18,7 @@ def board_range(num): #used to verify movements of most pieces
 class Board:
 
     board = []
+    move_history = MoveHistory()
 
     def create_board():
 
@@ -64,6 +66,14 @@ class Board:
             for y in x:
                 print(y, end=' ')
             print()
+    
+    def get_move_history():
+        """Return the move history object"""
+        return Board.move_history
+    
+    def print_move_history() -> None:
+        """Print all moves made in the game"""
+        print(Board.move_history)
 
 def has_path_rook(start: Square, end: Square) -> bool: #check if path is clear for rook
 
