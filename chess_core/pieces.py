@@ -1,8 +1,9 @@
 from chess_core.square import Square
 
 #   Cada peça é uma classe, contendo atributos como iswhite, que determina se a peça é branca ou preta,
-#selected, que serve para mudar a imagem caso a imagem seja selecionada, e o caminho para a imagens 
-#de cada peça.
+# selected, que serve para mudar a imagem caso a imagem seja selecionada, e o caminho para a imagens
+# de cada peça.
+
 
 class Piece:
 
@@ -17,14 +18,14 @@ class Piece:
         if self.selected:
             return self.selected_image
         return self.image
-        
+
 
 class Pawn(Piece):
 
     def __init__(self, iswhite) -> None:
         super().__init__(iswhite)
 
-        #Set value of the piece
+        # Set value of the piece
         if self.iswhite:
             self.image = "images/white-pawn.png"
             self.selected_image = "images/selected-white-pawn.png"
@@ -37,15 +38,15 @@ class Pawn(Piece):
 
     def __str__(self) -> str:
         if self.iswhite:
-            return 'P'
-        return 'p'
-    
-    def possible_move(self, start : Square, end : Square):
-        
-        #Can't move if the square is ocupied
+            return "P"
+        return "p"
+
+    def possible_move(self, start: Square, end: Square):
+
+        # Can't move if the square is ocupied
         if end.piece.iswhite == self.iswhite:
             return False
-        
+
         if start.y != end.y:
             return False
 
@@ -66,7 +67,7 @@ class Pawn(Piece):
 
 
 class Bishop(Piece):
-    
+
     def __init__(self, iswhite) -> None:
         super().__init__(iswhite)
 
@@ -82,29 +83,29 @@ class Bishop(Piece):
     def __str__(self) -> str:
         if self.iswhite:
             return "B"
-        return 'b'
-    
-    def possible_move(self, start : Square, end : Square):
+        return "b"
 
-        #Can't move if the square is ocupied
+    def possible_move(self, start: Square, end: Square):
+
+        # Can't move if the square is ocupied
         if end.piece.iswhite == self.iswhite:
             return False
-        
+
         x = abs(start.x - end.x)
         y = abs(start.y - end.y)
 
-        #Can only move on diagonal
+        # Can only move on diagonal
         if x == y:
             return True
         return False
-    
+
 
 class Knight(Piece):
-    
+
     def __init__(self, iswhite) -> None:
         super().__init__(iswhite)
 
-        #Set value of the piece
+        # Set value of the piece
         if self.iswhite:
             self.image = "images/white-knight.png"
             self.selected_image = "images/selected-white-knight.png"
@@ -116,15 +117,15 @@ class Knight(Piece):
 
     def __str__(self) -> str:
         if self.iswhite:
-            return 'N'
-        return 'n'
-    
+            return "N"
+        return "n"
+
     def possible_move(self, start: Square, end: Square):
-        
-        #Can't move if the square is ocupied
+
+        # Can't move if the square is ocupied
         if end.piece.iswhite == self.iswhite:
             return False
-        
+
         x = abs(start.x - end.x)
         y = abs(start.y - end.y)
 
@@ -135,11 +136,11 @@ class Knight(Piece):
 
 
 class Rook(Piece):
-    
+
     def __init__(self, iswhite) -> None:
         super().__init__(iswhite)
 
-        #Set value of the piece
+        # Set value of the piece
         if self.iswhite:
             self.image = "images/white-rook.png"
             self.selected_image = "images/selected-white-rook.png"
@@ -152,30 +153,30 @@ class Rook(Piece):
     def __str__(self) -> str:
 
         if self.iswhite:
-            return 'R'
-        return 'r'
+            return "R"
+        return "r"
 
-    def possible_move(self, start : Square, end : Square):
+    def possible_move(self, start: Square, end: Square):
 
-        #Can't move if the square is ocupied
+        # Can't move if the square is ocupied
         if end.piece.iswhite == self.iswhite:
             return False
-        
+
         x = abs(start.x - end.x)
         y = abs(start.y - end.y)
 
-        #Can only move in the same line or column
+        # Can only move in the same line or column
         if x == 0 or y == 0:
             return True
         return False
-    
+
 
 class Queen(Piece):
-    
+
     def __init__(self, iswhite) -> None:
         super().__init__(iswhite)
 
-        #Set value of the piece
+        # Set value of the piece
         if self.iswhite:
             self.image = "images/white-queen.png"
             self.selected_image = "images/selected-white-queen.png"
@@ -188,32 +189,32 @@ class Queen(Piece):
     def __str__(self) -> str:
 
         if self.iswhite:
-            return 'Q'
-        return 'q'
-    
-    def possible_move(self, start : Square, end : Square):
+            return "Q"
+        return "q"
 
-        #Can't move if the square is ocupied
+    def possible_move(self, start: Square, end: Square):
+
+        # Can't move if the square is ocupied
         if end.piece.iswhite == self.iswhite:
             return False
-        
+
         x = abs(start.x - end.x)
         y = abs(start.y - end.y)
 
-        #Basically, rook and bishop combined
+        # Basically, rook and bishop combined
         if x == y:
             return True
         if x == 0 or y == 0:
             return True
         return False
-    
+
 
 class King(Piece):
-    
+
     def __init__(self, iswhite) -> None:
         super().__init__(iswhite)
 
-        #Set value of the piece
+        # Set value of the piece
         if self.iswhite:
             self.image = "images/white-king.png"
             self.selected_image = "images/selected-white-king.png"
@@ -226,16 +227,16 @@ class King(Piece):
     def __str__(self) -> str:
 
         if self.iswhite:
-            return 'K'
-        return 'k'
-    
+            return "K"
+        return "k"
+
     def possible_move(self, start: Square, end: Square):
-        
-        #Can't move if the square is ocupied
+
+        # Can't move if the square is ocupied
         if end.piece.iswhite == self.iswhite:
             return False
 
-        #Check for regular movement
+        # Check for regular movement
         x = abs(end.x - start.x)
         y = abs(end.y - start.y)
 

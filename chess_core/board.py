@@ -1,8 +1,8 @@
 from chess_core.square import *
 from chess_core.pieces import *
 
-def board_range(num): #used to verify movements of most pieces
 
+def board_range(num):
     if num == 0:
         return []
     if num >= 1:
@@ -10,222 +10,207 @@ def board_range(num): #used to verify movements of most pieces
     if num <= -1:
         return range(-1, num, -1)
 
-#O tabuleiro em si. Temos o método create_board(), que preenche o tabuleiro com peças
-#   Nesta classe o movimento de cada peça é verificado e em métodos como has_path_rook e can_castle,
-#além de realizar o movimento propriamente dito
 
 class Board:
 
-    board = []
+    def __init__(self):
+        self.board = []
+        self.create_board()
 
-    def create_board():
+    def create_board(self):
 
-        line = [Square(0, 0 ,Rook(True)),
-                Square(0, 1 ,Knight(True)),
-                Square(0, 2 ,Bishop(True)),
-                Square(0, 3 ,Queen(True)),
-                Square(0, 4 ,King(True)),
-                Square(0, 5 ,Bishop(True)),
-                Square(0, 6 ,Knight(True)),
-                Square(0, 7 ,Rook(True))]
-        Board.board.append(line)
+        self.board = []
 
-        line = []
-        for i in range(8):
-            line.append(Square(1, i, Pawn(True)))
-        Board.board.append(line)
+        line = [
+            Square(0, 0, Rook(True)),
+            Square(0, 1, Knight(True)),
+            Square(0, 2, Bishop(True)),
+            Square(0, 3, Queen(True)),
+            Square(0, 4, King(True)),
+            Square(0, 5, Bishop(True)),
+            Square(0, 6, Knight(True)),
+            Square(0, 7, Rook(True)),
+        ]
+        self.board.append(line)
+
+        self.board.append([Square(1, i, Pawn(True)) for i in range(8)])
 
         for i in range(2, 6):
-            line = []
-            for j in range(8):
-                line.append(Square(i, j))
+            self.board.append([Square(i, j) for j in range(8)])
 
-            Board.board.append(line)
+        self.board.append([Square(6, i, Pawn(False)) for i in range(8)])
 
-        line = []
-        for i in range(8):
-            line.append(Square(6, i, Pawn(False)))
-        Board.board.append(line)
+        line = [
+            Square(7, 0, Rook(False)),
+            Square(7, 1, Knight(False)),
+            Square(7, 2, Bishop(False)),
+            Square(7, 3, Queen(False)),
+            Square(7, 4, King(False)),
+            Square(7, 5, Bishop(False)),
+            Square(7, 6, Knight(False)),
+            Square(7, 7, Rook(False)),
+        ]
+        self.board.append(line)
 
-        line = [Square(7, 0 ,Rook(False)),
-                Square(7, 1 ,Knight(False)),
-                Square(7, 2 ,Bishop(False)),
-                Square(7, 3 ,Queen(False)),
-                Square(7, 4 ,King(False)),
-                Square(7, 5 ,Bishop(False)),
-                Square(7, 6 ,Knight(False)),
-                Square(7, 7 ,Rook(False))]
-        Board.board.append(line)
-
-        
-    def print_board() -> None:
-
-        for x in Board.board[::-1]:
-            for y in x:
-                print(y, end=' ')
+    def print_board(self):
+        for row in self.board[::-1]:
+            for sq in row:
+                print(sq, end=" ")
             print()
 
-def has_path_rook(start: Square, end: Square) -> bool: #check if path is clear for rook
 
-    #See if is a possible move
+# =========================
+# Movement Functions
+# =========================
+
+
+def has_path_rook(board: Board, start: Square, end: Square):
+
     if not start.piece.possible_move(start, end):
         return False
 
     x = end.x - start.x
     y = end.y - start.y
 
-    #If moving in the same column
     if x != 0:
         for i in board_range(x):
-            if not isinstance(Board.board[start.x + i][start.y].piece, EmptySquare):
+            if not isinstance(board.board[start.x + i][start.y].piece, EmptySquare):
                 return False
         return True
-    
-    #Else, moving in the same line
+
     for i in board_range(y):
-        if not isinstance(Board.board[start.x][start.y + i].piece, EmptySquare):
+        if not isinstance(board.board[start.x][start.y + i].piece, EmptySquare):
             return False
+
     return True
 
-def has_path_bishop(start : Square, end : Square) -> bool: #check if path is clear for bishop
+
+def has_path_bishop(board: Board, start: Square, end: Square):
 
     if not start.piece.possible_move(start, end):
         return False
-    
-    x = end.x - start.x 
+
+    x = end.x - start.x
     y = end.y - start.y
 
-    #verify this for the Queen move
     if x == 0 or y == 0:
         return False
 
-    #Using zip because x and y absolute values are the same
     for i, j in zip(board_range(x), board_range(y)):
-        if not isinstance(Board.board[start.x + i][start.y + j].piece, EmptySquare):
+        if not isinstance(board.board[start.x + i][start.y + j].piece, EmptySquare):
             return False
+
     return True
 
 
-def pawn_can_capture(start : Square, end : Square) -> bool:
+def pawn_can_capture(board: Board, start: Square, end: Square):
 
     x = end.x - start.x
     y = abs(end.y - start.y)
 
-    if not isinstance(end.piece, EmptySquare) and start.piece.iswhite != end.piece.iswhite:
+    if (
+        not isinstance(end.piece, EmptySquare)
+        and start.piece.iswhite != end.piece.iswhite
+    ):
         if start.piece.iswhite and x == 1 and y == 1:
             return True
-        elif not start.piece.iswhite and x == -1 and y == 1:
-            return True
-        
-    #Checking for en passant
-    if isinstance(end.piece, EmptySquare) and isinstance(Board.board[start.x][end.y].piece, Pawn):
-        if start.piece.iswhite and y == 1 and x == 1:
-            if Board.board[start.x][end.y].piece.en_passantable:
-                return True 
         if not start.piece.iswhite and x == -1 and y == 1:
-            if Board.board[start.x][end.y].piece.en_passantable:
-                return True 
+            return True
+
+    # en passant
+    if isinstance(end.piece, EmptySquare) and isinstance(
+        board.board[start.x][end.y].piece, Pawn
+    ):
+        target_pawn = board.board[start.x][end.y].piece
+        if target_pawn.en_passantable:
+            if start.piece.iswhite and x == 1 and y == 1:
+                return True
+            if not start.piece.iswhite and x == -1 and y == 1:
+                return True
+
     return False
 
 
-def can_castle(start : Square, end : Square) -> bool:
+def can_castle(board: Board, start: Square, end: Square):
 
     x = end.x - start.x
     y = end.y - start.y
 
     if start.piece.moved or abs(y) != 2 or x != 0:
         return False
-    
-    #Find correct rook square and square rook will move to
+
     if y > 0:
-        rook_square : Square = Board.board[start.x][7]
-        move_square : Square = Board.board[start.x][start.y + 1]
+        rook_square = board.board[start.x][7]
+        move_square = board.board[start.x][start.y + 1]
     else:
-        rook_square : Square = Board.board[start.x][0]
-        move_square : Square = Board.board[start.x][start.y - 1]  
-    
-    #Verifies if rook_square is rook and has not moved
-    if (not isinstance(rook_square.piece, Rook)) or rook_square.piece.moved == True:
+        rook_square = board.board[start.x][0]
+        move_square = board.board[start.x][start.y - 1]
+
+    if not isinstance(rook_square.piece, Rook) or rook_square.piece.moved:
         return False
-    
-    #Verifies path
-    if has_path_rook(rook_square, move_square):
-        move_piece(rook_square, move_square)
+
+    if has_path_rook(board, rook_square, move_square):
+        move_piece(board, rook_square, move_square)
         return True
+
     return False
 
 
-def move_piece(start: Square, end: Square) -> bool:
+def move_piece(board: Board, start: Square, end: Square):
 
-    # Move the rook
-    if isinstance(start.piece, Rook):
-        if has_path_rook(start, end):
-            start.piece.moved = True
-            Board.board[end.x][end.y].piece = start.piece
-            Board.board[start.x][start.y] = Square(start.x, start.y)
-            return True
+    piece = start.piece
 
-    # Move the bishop
-    elif isinstance(start.piece, Bishop):
-        if has_path_bishop(start, end):
-            Board.board[end.x][end.y].piece = start.piece
-            Board.board[start.x][start.y] = Square(start.x, start.y)
-            return True
+    # ---------------- ROOK ----------------
+    if isinstance(piece, Rook):
+        if not has_path_rook(board, start, end):
+            return False
+        piece.moved = True
 
-    # Move the queen
-    elif isinstance(start.piece, Queen):
-        if has_path_rook(start, end):
-            Board.board[end.x][end.y].piece = start.piece
-            Board.board[start.x][start.y] = Square(start.x, start.y)
-            return True
-        elif has_path_bishop(start, end):
-            Board.board[end.x][end.y].piece = start.piece
-            Board.board[start.x][start.y] = Square(start.x, start.y)
-            return True
+    # ---------------- BISHOP ----------------
+    elif isinstance(piece, Bishop):
+        if not has_path_bishop(board, start, end):
+            return False
 
-    # Move the King 
-    elif isinstance(start.piece, King):
-        if start.piece.possible_move(start, end) or can_castle(start, end):
-            start.piece.moved = True
-            Board.board[end.x][end.y].piece = start.piece
-            Board.board[start.x][start.y] = Square(start.x, start.y)
-            return True
+    # ---------------- QUEEN ----------------
+    elif isinstance(piece, Queen):
+        if not (has_path_rook(board, start, end) or has_path_bishop(board, start, end)):
+            return False
 
-    # Move the knight
-    elif isinstance(start.piece, Knight):
-        if start.piece.possible_move(start, end):
-            Board.board[end.x][end.y].piece = start.piece
-            Board.board[start.x][start.y] = Square(start.x, start.y)
-            return True
+    # ---------------- KING ----------------
+    elif isinstance(piece, King):
+        if not (piece.possible_move(start, end) or can_castle(board, start, end)):
+            return False
+        piece.moved = True
 
-    # Move the pawn
-    elif isinstance(start.piece, Pawn):
-        if ((start.piece.possible_move(start, end) and isinstance(end.piece, EmptySquare))
-            or pawn_can_capture(start, end)):
-            
-            start.piece.moved = True
+    # ---------------- KNIGHT ----------------
+    elif isinstance(piece, Knight):
+        if not piece.possible_move(start, end):
+            return False
 
-            if abs(start.x - end.x) == 2:
-                start.piece.en_passantable = True
-            
-            #if en passant
-            if isinstance(end.piece, EmptySquare):
-                Board.board[start.x][end.y] = Square(start.x, end.y)
+    # ---------------- PAWN ----------------
+    elif isinstance(piece, Pawn):
 
-            Board.board[end.x][end.y].piece = start.piece
-            Board.board[start.x][start.y] = Square(start.x, start.y)
-            return True
-    return False
+        if not (
+            (piece.possible_move(start, end) and isinstance(end.piece, EmptySquare))
+            or pawn_can_capture(board, start, end)
+        ):
+            return False
 
+        piece.moved = True
 
-def main():
-    Board.create_board()
+        # เดิน 2 ช่อง
+        if abs(start.x - end.x) == 2:
+            piece.en_passantable = True
 
-    Board.board[1][0] = Square(1,0)
-    Board.board[1][3] = Square(1,3)
-    Board.board[6][3] = Square(6,3)
-    Board.board[6][1] = Square(6,1)
-    Board.print_board()
+        # en passant capture
+        if isinstance(end.piece, EmptySquare) and start.y != end.y:
+            board.board[start.x][end.y].piece = EmptySquare()
 
-if __name__ == "__main__":
-    main()
+    else:
+        return False
+
+    # ---------------- MOVE ----------------
+    board.board[end.x][end.y].piece = piece
+    board.board[start.x][start.y].piece = EmptySquare()
+
+    return True

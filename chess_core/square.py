@@ -1,5 +1,6 @@
 #   A classe Square representa o quadrado no tabuleiro e armazena uma peça. Caso não tenha nenhuma
-#peça no quadrado, Square amazena um EmptySquare
+# peça no quadrado, Square amazena um EmptySquare
+
 
 class EmptySquare:
 
@@ -12,11 +13,11 @@ class EmptySquare:
         self.selected_image = "images/selected-clear.png"
 
     def __str__(self) -> str:
-        return '.'
-    
+        return "."
+
     def possible_move(start, end):
         return False
-    
+
     def get_selected_image(self):
         if self.selected:
             return self.selected_image
@@ -25,7 +26,7 @@ class EmptySquare:
 
 class Square:
 
-    def __init__(self, x, y, piece = None) -> None:
+    def __init__(self, x, y, piece=None) -> None:
 
         self.x = x
         self.y = y
@@ -33,8 +34,8 @@ class Square:
             self.piece = EmptySquare()
         else:
             self.piece = piece
-        
+
     def __repr__(self) -> str:
         if self.piece == None:
-            return '.'
+            return "."
         return self.piece.__str__()
