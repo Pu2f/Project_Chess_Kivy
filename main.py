@@ -21,10 +21,11 @@ class ChessGame(BoxLayout):
 
 class BoardGrid(GridLayout):
 
+    # ถ้า iswhite == True แสดงมุมมองจากฝั่งขาว (row 0 ที่ด้านล่างของ model)
     iswhite = True
     ui_iswhite = StringProperty("images/white-king.png")
     selected = False
-    s_x = None
+    s_x = None  # เก็บพิกัด model ของ selection
     s_y = None
 
     w, h = Window._get_size()
@@ -38,6 +39,7 @@ class BoardGrid(GridLayout):
     row_default_height = board_size / 8
     col_default_width = board_size / 8
 
+    # สร้าง properties สำหรับทุกช่อง (ค่าเริ่มต้นมาจาก model แต่จะถูกอัพเดตผ่าน update_images())
     s00 = StringProperty(Board.board[0][0].piece.image)
     s01 = StringProperty(Board.board[0][1].piece.image)
     s02 = StringProperty(Board.board[0][2].piece.image)
@@ -110,173 +112,58 @@ class BoardGrid(GridLayout):
     s76 = StringProperty(Board.board[7][6].piece.image)
     s77 = StringProperty(Board.board[7][7].piece.image)
 
+    def ui_to_model(self, x, y):
+        """แปลงพิกัด UI (kv) เป็นพิกัด model (Board.board) ตามมุมมองปัจจุบัน"""
+        if self.iswhite:
+            return x, y
+        return 7 - x, 7 - y
+
+    def update_images(self):
+        """อัพเดตทุก StringProperty ให้แม็ปจาก model ไปยัง UI ตามมุมมอง"""
+        for ui_x in range(8):
+            for ui_y in range(8):
+                mx, my = self.ui_to_model(ui_x, ui_y)
+                prop = f"s{ui_x}{ui_y}"
+                # ทุกช่องเรียก get_selected_image() เพราะสถานะ selected ถูกเก็บบน piece ใน model
+                setattr(self, prop, Board.board[mx][my].piece.get_selected_image())
+
     def click(self, x, y):
+        # เมื่อผู้ใช้คลิกพิกัด UI ให้แปลงเป็นพิกัด model ก่อนใช้งาน
+        mx, my = self.ui_to_model(x, y)
 
         if not BoardGrid.selected:
-            BoardGrid.s_x = x
-            BoardGrid.s_y = y
+            # เลือกหมาก (เก็บพิกัดเป็น model coords)
+            BoardGrid.s_x = mx
+            BoardGrid.s_y = my
             BoardGrid.selected = True
-            Board.board[x][y].piece.selected = True
+            Board.board[mx][my].piece.selected = True
 
-            self.s00 = Board.board[0][0].piece.get_selected_image()
-            self.s01 = Board.board[0][1].piece.get_selected_image()
-            self.s02 = Board.board[0][2].piece.get_selected_image()
-            self.s03 = Board.board[0][3].piece.get_selected_image()
-            self.s04 = Board.board[0][4].piece.get_selected_image()
-            self.s05 = Board.board[0][5].piece.get_selected_image()
-            self.s06 = Board.board[0][6].piece.get_selected_image()
-            self.s07 = Board.board[0][7].piece.get_selected_image()
-
-            self.s10 = Board.board[1][0].piece.get_selected_image()
-            self.s11 = Board.board[1][1].piece.get_selected_image()
-            self.s12 = Board.board[1][2].piece.get_selected_image()
-            self.s13 = Board.board[1][3].piece.get_selected_image()
-            self.s14 = Board.board[1][4].piece.get_selected_image()
-            self.s15 = Board.board[1][5].piece.get_selected_image()
-            self.s16 = Board.board[1][6].piece.get_selected_image()
-            self.s17 = Board.board[1][7].piece.get_selected_image()
-
-            self.s20 = Board.board[2][0].piece.get_selected_image()
-            self.s21 = Board.board[2][1].piece.get_selected_image()
-            self.s22 = Board.board[2][2].piece.get_selected_image()
-            self.s23 = Board.board[2][3].piece.get_selected_image()
-            self.s24 = Board.board[2][4].piece.get_selected_image()
-            self.s25 = Board.board[2][5].piece.get_selected_image()
-            self.s26 = Board.board[2][6].piece.get_selected_image()
-            self.s27 = Board.board[2][7].piece.get_selected_image()
-
-            self.s30 = Board.board[3][0].piece.get_selected_image()
-            self.s31 = Board.board[3][1].piece.get_selected_image()
-            self.s32 = Board.board[3][2].piece.get_selected_image()
-            self.s33 = Board.board[3][3].piece.get_selected_image()
-            self.s34 = Board.board[3][4].piece.get_selected_image()
-            self.s35 = Board.board[3][5].piece.get_selected_image()
-            self.s36 = Board.board[3][6].piece.get_selected_image()
-            self.s37 = Board.board[3][7].piece.get_selected_image()
-
-            self.s40 = Board.board[4][0].piece.get_selected_image()
-            self.s41 = Board.board[4][1].piece.get_selected_image()
-            self.s42 = Board.board[4][2].piece.get_selected_image()
-            self.s43 = Board.board[4][3].piece.get_selected_image()
-            self.s44 = Board.board[4][4].piece.get_selected_image()
-            self.s45 = Board.board[4][5].piece.get_selected_image()
-            self.s46 = Board.board[4][6].piece.get_selected_image()
-            self.s47 = Board.board[4][7].piece.get_selected_image()
-
-            self.s50 = Board.board[5][0].piece.get_selected_image()
-            self.s51 = Board.board[5][1].piece.get_selected_image()
-            self.s52 = Board.board[5][2].piece.get_selected_image()
-            self.s53 = Board.board[5][3].piece.get_selected_image()
-            self.s54 = Board.board[5][4].piece.get_selected_image()
-            self.s55 = Board.board[5][5].piece.get_selected_image()
-            self.s56 = Board.board[5][6].piece.get_selected_image()
-            self.s57 = Board.board[5][7].piece.get_selected_image()
-
-            self.s60 = Board.board[6][0].piece.get_selected_image()
-            self.s61 = Board.board[6][1].piece.get_selected_image()
-            self.s62 = Board.board[6][2].piece.get_selected_image()
-            self.s63 = Board.board[6][3].piece.get_selected_image()
-            self.s64 = Board.board[6][4].piece.get_selected_image()
-            self.s65 = Board.board[6][5].piece.get_selected_image()
-            self.s66 = Board.board[6][6].piece.get_selected_image()
-            self.s67 = Board.board[6][7].piece.get_selected_image()
-
-            self.s70 = Board.board[7][0].piece.get_selected_image()
-            self.s71 = Board.board[7][1].piece.get_selected_image()
-            self.s72 = Board.board[7][2].piece.get_selected_image()
-            self.s73 = Board.board[7][3].piece.get_selected_image()
-            self.s74 = Board.board[7][4].piece.get_selected_image()
-            self.s75 = Board.board[7][5].piece.get_selected_image()
-            self.s76 = Board.board[7][6].piece.get_selected_image()
-            self.s77 = Board.board[7][7].piece.get_selected_image()
+            self.update_images()
 
         else:
-            if turn(BoardGrid.s_x, BoardGrid.s_y, x, y, BoardGrid.iswhite):
+            # พยายามเดินจาก (s_x, s_y) -> (mx, my)
+            if turn(BoardGrid.s_x, BoardGrid.s_y, mx, my, BoardGrid.iswhite):
+                # ถ้าเดินสำเร็จ ให้สลับมุมมอง (เพราะเปลี่ยนตา)
                 BoardGrid.iswhite = not BoardGrid.iswhite
+                # สลับไอคอนแสดงว่าใครตา (UI ด้านข้าง)
                 if self.ui_iswhite == "images/white-king.png":
                     self.ui_iswhite = "images/black-king.png"
                 else:
                     self.ui_iswhite = "images/white-king.png"
+
+            # ยกเลิก selected ทั้งคู่ (ใช้ model coords เดิม)
             BoardGrid.selected = False
-
             Board.board[BoardGrid.s_x][BoardGrid.s_y].piece.selected = False
-            Board.board[x][y].piece.selected = False
+            Board.board[mx][my].piece.selected = False
 
-            self.s00 = Board.board[0][0].piece.get_selected_image()
-            self.s01 = Board.board[0][1].piece.get_selected_image()
-            self.s02 = Board.board[0][2].piece.get_selected_image()
-            self.s03 = Board.board[0][3].piece.get_selected_image()
-            self.s04 = Board.board[0][4].piece.get_selected_image()
-            self.s05 = Board.board[0][5].piece.get_selected_image()
-            self.s06 = Board.board[0][6].piece.get_selected_image()
-            self.s07 = Board.board[0][7].piece.get_selected_image()
-
-            self.s10 = Board.board[1][0].piece.get_selected_image()
-            self.s11 = Board.board[1][1].piece.get_selected_image()
-            self.s12 = Board.board[1][2].piece.get_selected_image()
-            self.s13 = Board.board[1][3].piece.get_selected_image()
-            self.s14 = Board.board[1][4].piece.get_selected_image()
-            self.s15 = Board.board[1][5].piece.get_selected_image()
-            self.s16 = Board.board[1][6].piece.get_selected_image()
-            self.s17 = Board.board[1][7].piece.get_selected_image()
-
-            self.s20 = Board.board[2][0].piece.get_selected_image()
-            self.s21 = Board.board[2][1].piece.get_selected_image()
-            self.s22 = Board.board[2][2].piece.get_selected_image()
-            self.s23 = Board.board[2][3].piece.get_selected_image()
-            self.s24 = Board.board[2][4].piece.get_selected_image()
-            self.s25 = Board.board[2][5].piece.get_selected_image()
-            self.s26 = Board.board[2][6].piece.get_selected_image()
-            self.s27 = Board.board[2][7].piece.get_selected_image()
-
-            self.s30 = Board.board[3][0].piece.get_selected_image()
-            self.s31 = Board.board[3][1].piece.get_selected_image()
-            self.s32 = Board.board[3][2].piece.get_selected_image()
-            self.s33 = Board.board[3][3].piece.get_selected_image()
-            self.s34 = Board.board[3][4].piece.get_selected_image()
-            self.s35 = Board.board[3][5].piece.get_selected_image()
-            self.s36 = Board.board[3][6].piece.get_selected_image()
-            self.s37 = Board.board[3][7].piece.get_selected_image()
-
-            self.s40 = Board.board[4][0].piece.get_selected_image()
-            self.s41 = Board.board[4][1].piece.get_selected_image()
-            self.s42 = Board.board[4][2].piece.get_selected_image()
-            self.s43 = Board.board[4][3].piece.get_selected_image()
-            self.s44 = Board.board[4][4].piece.get_selected_image()
-            self.s45 = Board.board[4][5].piece.get_selected_image()
-            self.s46 = Board.board[4][6].piece.get_selected_image()
-            self.s47 = Board.board[4][7].piece.get_selected_image()
-
-            self.s50 = Board.board[5][0].piece.get_selected_image()
-            self.s51 = Board.board[5][1].piece.get_selected_image()
-            self.s52 = Board.board[5][2].piece.get_selected_image()
-            self.s53 = Board.board[5][3].piece.get_selected_image()
-            self.s54 = Board.board[5][4].piece.get_selected_image()
-            self.s55 = Board.board[5][5].piece.get_selected_image()
-            self.s56 = Board.board[5][6].piece.get_selected_image()
-            self.s57 = Board.board[5][7].piece.get_selected_image()
-
-            self.s60 = Board.board[6][0].piece.get_selected_image()
-            self.s61 = Board.board[6][1].piece.get_selected_image()
-            self.s62 = Board.board[6][2].piece.get_selected_image()
-            self.s63 = Board.board[6][3].piece.get_selected_image()
-            self.s64 = Board.board[6][4].piece.get_selected_image()
-            self.s65 = Board.board[6][5].piece.get_selected_image()
-            self.s66 = Board.board[6][6].piece.get_selected_image()
-            self.s67 = Board.board[6][7].piece.get_selected_image()
-
-            self.s70 = Board.board[7][0].piece.get_selected_image()
-            self.s71 = Board.board[7][1].piece.get_selected_image()
-            self.s72 = Board.board[7][2].piece.get_selected_image()
-            self.s73 = Board.board[7][3].piece.get_selected_image()
-            self.s74 = Board.board[7][4].piece.get_selected_image()
-            self.s75 = Board.board[7][5].piece.get_selected_image()
-            self.s76 = Board.board[7][6].piece.get_selected_image()
-            self.s77 = Board.board[7][7].piece.get_selected_image()
+            # รีเฟรชภาพทั้งหมดตามมุมมองใหม่ (iswhite อาจเปลี่ยน)
+            self.update_images()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 8
+        # อัพเดตภาพเริ่มต้น (กรณี model เปลี่ยนก่อนหน้า)
+        self.update_images()
 
 
 class Ui(BoxLayout):
