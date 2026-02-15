@@ -155,6 +155,26 @@ def can_castle(start : Square, end : Square) -> bool:
     return False
 
 
+def _pawn_forward_path_clear(start: Square, end: Square) -> bool:
+    """
+    NEW: กันบั๊ก pawn เดิน 2 ช่องแล้วข้ามตัวหมาก
+    ตรวจเฉพาะ "เดินตรง" (ไฟล์เดิม) เท่านั้น
+    """
+    if start.y != end.y:
+        return True  # ไม่ใช่เดินตรง (capture จะตรวจที่อื่น)
+
+    dx = end.x - start.x
+    if start.piece.iswhite:
+        if dx == 2:
+            mid = Board.board[start.x + 1][start.y]
+            return isinstance(mid.piece, EmptySquare)
+    else:
+        if dx == -2:
+            mid = Board.board[start.x - 1][start.y]
+            return isinstance(mid.piece, EmptySquare)
+    return True
+
+
 def move_piece(start: Square, end: Square) -> bool:
 
     # Move the rook
@@ -200,6 +220,10 @@ def move_piece(start: Square, end: Square) -> bool:
 
     # Move the pawn
     elif isinstance(start.piece, Pawn):
+        # NEW: ถ้าเดินตรง 2 ช่อง ต้องไม่มีตัวขวาง
+        if not _pawn_forward_path_clear(start, end):
+            return False
+
         if ((start.piece.possible_move(start, end) and isinstance(end.piece, EmptySquare))
             or pawn_can_capture(start, end)):
             
@@ -208,8 +232,8 @@ def move_piece(start: Square, end: Square) -> bool:
             if abs(start.x - end.x) == 2:
                 start.piece.en_passantable = True
             
-            #if en passant
-            if isinstance(end.piece, EmptySquare):
+            # if en passant (capture เฉียงแต่ปลายทางว่าง)
+            if isinstance(end.piece, EmptySquare) and start.y != end.y:
                 Board.board[start.x][end.y] = Square(start.x, end.y)
 
             Board.board[end.x][end.y].piece = start.piece

@@ -4,20 +4,24 @@ from chess_core.board import *
 
 from chess_core.fen import to_fen
 from chess_core.san_history import SanHistory
+from chess_core.game_state import GAME_STATE
 
-from typing import Literal, Tuple, Union
+from typing import Literal, Tuple, Union, Optional
+
+import chess
 
 # เก็บ SAN history ไว้ใช้ใน UI
 SAN_HISTORY = SanHistory()
 
-# ----- NEW: types for promotion flow -----
+# ----- types for promotion/draw flow -----
 PromotionPending = Tuple[
     Literal["PROMOTION"],
     str,   # fen_before
     int, int, int, int,  # x1, y1, x2, y2
     bool,  # iswhite (side who moved)
 ]
-TurnResult = Union[bool, PromotionPending]
+DrawResult = Tuple[Literal["DRAW"], str]
+TurnResult = Union[bool, PromotionPending, DrawResult]
 
 
 def clear_legal_hints() -> None:
@@ -54,7 +58,7 @@ def compute_legal_hints_for(x: int, y: int, iswhite: bool) -> None:
             s_moved = getattr(s_piece, "moved", None)
             e_moved = getattr(e_piece, "moved", None)
 
-            # สำห��ับ pawn: ต้องจำ en_passantable ด้วย
+            # สำหรับ pawn: ต้องจำ en_passantable ด้วย
             s_ep = getattr(s_piece, "en_passantable", None)
             side_sq = None
             side_piece = None
@@ -158,16 +162,14 @@ def check_for_check(iswhite: bool) -> bool:
 
 
 def end_turn(iswhite: bool) -> None:
-    # reset en_passantable ของฝ่ายตรงข้าม (ถูกต้อง: มีผล 1 ตา)
+    # reset en_passantable ของฝ่ายตรงข้าม (มีผล 1 ตา)
     for line in Board.board:
         for square in line:
             if square.piece.iswhite != iswhite and isinstance(square.piece, Pawn):
                 square.piece.en_passantable = False
 
-    # NOTE: promotion ถูกย้ายออกไปให้ UI เลือกก่อน
 
-
-# ----- NEW: promotion helpers -----
+# ----- promotion helpers -----
 def needs_promotion(x: int, y: int, iswhite: bool) -> bool:
     p = Board.board[x][y].piece
     if not isinstance(p, Pawn):
@@ -215,11 +217,43 @@ def check_for_checkmate(iswhite):
     return True
 
 
+def _fen(side_to_move_iswhite: bool) -> str:
+    return to_fen(
+        side_to_move_iswhite=side_to_move_iswhite,
+        halfmove_clock=GAME_STATE.halfmove_clock,
+        fullmove_number=GAME_STATE.fullmove_number,
+    )
+
+
+def _update_clocks_after_move(moved_piece, was_capture: bool, moved_iswhite: bool) -> None:
+    # 50-move: รีเซ็ตเมื่อเดิน pawn หรือ capture
+    if isinstance(moved_piece, Pawn) or was_capture:
+        GAME_STATE.halfmove_clock = 0
+    else:
+        GAME_STATE.halfmove_clock += 1
+
+    # fullmove เพิ่มหลังดำเดินจบ
+    if not moved_iswhite:
+        GAME_STATE.fullmove_number += 1
+
+
+def _draw_reason(side_to_move_iswhite: bool) -> Optional[str]:
+    b = chess.Board(_fen(side_to_move_iswhite))
+
+    if b.is_stalemate():
+        return "Draw by stalemate"
+    if b.can_claim_threefold_repetition():
+        return "Draw by threefold repetition (claim)"
+    if b.can_claim_fifty_moves():
+        return "Draw by 50-move rule (claim)"
+    return None
+
+
 def turn(x1, y1, x2, y2, iswhite, check=False) -> TurnResult:
     start: Square = Board.board[x1][y1]
     end: Square = Board.board[x2][y2]
 
-    fen_before = to_fen(side_to_move_iswhite=iswhite)
+    fen_before = _fen(side_to_move_iswhite=iswhite)
 
     s_piece = start.piece
     e_piece = end.piece
@@ -236,16 +270,19 @@ def turn(x1, y1, x2, y2, iswhite, check=False) -> TurnResult:
                 Board.board[end.x][end.y].piece.moved = e_moved
                 return False
 
-            # ----- NEW: stop here if promotion is needed -----
+            # promotion pending
             if needs_promotion(x2, y2, iswhite):
                 return ("PROMOTION", fen_before, x1, y1, x2, y2, iswhite)
 
-            # บันทึก SAN (ไม่มี promotion)
+            # SAN
             SAN_HISTORY.push_from_fen_and_coords(
                 fen_before_move=fen_before,
                 x1=x1, y1=y1, x2=x2, y2=y2,
                 promotion=None,
             )
+
+            was_capture = not isinstance(e_piece, EmptySquare)
+            _update_clocks_after_move(moved_piece=s_piece, was_capture=was_capture, moved_iswhite=iswhite)
 
             end_turn(iswhite)
 
@@ -258,5 +295,14 @@ def turn(x1, y1, x2, y2, iswhite, check=False) -> TurnResult:
                             and Board.board[i // 8][i % 8].piece.iswhite == other_iswhite
                         ):
                             Board.board[i // 8][i % 8].piece.selected = True
+                    return True
+
+            # NEW: draw
+            reason = _draw_reason(side_to_move_iswhite=other_iswhite)
+            if reason:
+                GAME_STATE.game_over = True
+                GAME_STATE.result_text = reason
+                return ("DRAW", reason)
+
             return True
     return False

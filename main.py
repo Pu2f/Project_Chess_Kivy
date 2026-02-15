@@ -5,6 +5,7 @@ from chess_core.rules import (
 from chess_core.board import Board
 from chess_core.square import EmptySquare
 from chess_core.pieces import King, Queen, Rook, Bishop, Knight, Pawn
+from chess_core.game_state import GAME_STATE
 
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
@@ -56,8 +57,7 @@ class BoardGrid(GridLayout):
         self.s_x = None
         self.s_y = None
 
-        # NEW: pending promotion state
-        # tuple: (fen_before, x1, y1, x2, y2, iswhite)
+        # pending promotion state
         self._pending_promotion = None
 
         w, h = Window._get_size()
@@ -83,7 +83,7 @@ class BoardGrid(GridLayout):
                 self.add_widget(sw)
 
         self.refresh_all()
-        self.move_list_text = SAN_HISTORY.formatted()
+        self._update_move_list()
 
     def ui_to_model(self, ui_row: int, ui_col: int):
         mx = 7 - ui_row
@@ -98,8 +98,19 @@ class BoardGrid(GridLayout):
         for sw in self._squares:
             sw.refresh()
 
+    def _update_move_list(self) -> None:
+        base = SAN_HISTORY.formatted()
+        if GAME_STATE.result_text:
+            self.move_list_text = base + ("\n\n" if base else "") + GAME_STATE.result_text
+        else:
+            self.move_list_text = base
+
     def click_model(self, mx, my):
-        # ถ้ามี promotion ค้างอยู่: บล็อกการคลิกกระดาน
+        # ล็อกเกมเมื่อจบ (รวมเสมอ)
+        if GAME_STATE.game_over:
+            return
+
+        # promotion ค้างอยู่: บล็อกการคลิกกระดาน
         if self._pending_promotion is not None:
             return
 
@@ -114,60 +125,58 @@ class BoardGrid(GridLayout):
             self.refresh_all()
             return
 
-        # กดครั้งที่ 2 = พยายามเดิน
         result = turn(self.s_x, self.s_y, mx, my, self.iswhite)
 
         clear_legal_hints()
 
-        # รีเซ็ต selection highlight
         self.selected = False
         Board.board[self.s_x][self.s_y].piece.selected = False
         Board.board[mx][my].piece.selected = False
 
-        # ----- NEW: handle promotion pending -----
-        if isinstance(result, tuple) and len(result) >= 1 and result[0] == "PROMOTION":
+        # promotion pending
+        if isinstance(result, tuple) and result and result[0] == "PROMOTION":
             _, fen_before, x1, y1, x2, y2, moved_iswhite = result
             self._pending_promotion = (fen_before, x1, y1, x2, y2, moved_iswhite)
-
-            # เปิด popup ให้เลือก
             PromotionPopup(on_pick=self._finalize_promotion).open()
+            self.refresh_all()
+            return
 
+        # draw
+        if isinstance(result, tuple) and result and result[0] == "DRAW":
+            self._update_move_list()
             self.refresh_all()
             return
 
         moved = bool(result)
-
         if moved:
             self.iswhite = not self.iswhite
-            self.view_iswhite = self.iswhite  # flip ตามฝั่งเดิน
+            self.view_iswhite = self.iswhite
 
-        self.move_list_text = SAN_HISTORY.formatted()
+        self._update_move_list()
         self.refresh_all()
 
     def _finalize_promotion(self, choice: str) -> None:
-        """
-        choice: 'q','r','b','n'
-        """
-        if self._pending_promotion is None:
+        if self._pending_promotion is None or GAME_STATE.game_over:
             return
 
         fen_before, x1, y1, x2, y2, moved_iswhite = self._pending_promotion
         self._pending_promotion = None
 
-        # 1) เปลี่ยนตัวหมากบนกระดานตามที่เลือก
         apply_promotion(x2, y2, moved_iswhite, choice)
 
-        # 2) push SAN โดยระบุ promotion
         SAN_HISTORY.push_from_fen_and_coords(
             fen_before_move=fen_before,
             x1=x1, y1=y1, x2=x2, y2=y2,
             promotion=choice,
         )
 
-        # 3) end turn (reset en passant, etc.)
+        # clocks: promotion = pawn move
+        GAME_STATE.halfmove_clock = 0
+        if not moved_iswhite:
+            GAME_STATE.fullmove_number += 1
+
         end_turn(moved_iswhite)
 
-        # 4) check/checkmate หลังโปรโมต (เพราะชิ้นที่โปรโมตมีผล)
         other_iswhite = not moved_iswhite
         if check_for_check(other_iswhite):
             if check_for_checkmate(other_iswhite):
@@ -176,11 +185,35 @@ class BoardGrid(GridLayout):
                     if isinstance(sq.piece, King) and sq.piece.iswhite == other_iswhite:
                         sq.piece.selected = True
 
-        # 5) flip side + update UI texts
-        self.iswhite = not self.iswhite
-        self.view_iswhite = self.iswhite
+        # draw check after promotion
+        import chess
+        from chess_core.fen import to_fen
 
-        self.move_list_text = SAN_HISTORY.formatted()
+        fen_after = to_fen(
+            side_to_move_iswhite=other_iswhite,
+            halfmove_clock=GAME_STATE.halfmove_clock,
+            fullmove_number=GAME_STATE.fullmove_number,
+        )
+        b = chess.Board(fen_after)
+
+        reason = None
+        if b.is_stalemate():
+            reason = "Draw by stalemate"
+        elif b.can_claim_threefold_repetition():
+            reason = "Draw by threefold repetition (claim)"
+        elif b.can_claim_fifty_moves():
+            reason = "Draw by 50-move rule (claim)"
+
+        if reason:
+            GAME_STATE.game_over = True
+            GAME_STATE.result_text = reason
+
+        # flip side (ถ้าไม่เสมอ)
+        if not GAME_STATE.game_over:
+            self.iswhite = not self.iswhite
+            self.view_iswhite = self.iswhite
+
+        self._update_move_list()
         self.refresh_all()
 
 

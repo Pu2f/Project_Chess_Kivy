@@ -1,6 +1,5 @@
 # Chess
 
-A chess application using python and kivy. This was made as the first project in my university.
 
 ## Video Demonstration
 
