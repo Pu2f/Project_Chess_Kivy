@@ -5,11 +5,20 @@ from chess_core.board import *
 from chess_core.fen import to_fen
 from chess_core.san_history import SanHistory
 
+from typing import Literal, Tuple, Union
+
 # เก็บ SAN history ไว้ใช้ใน UI
 SAN_HISTORY = SanHistory()
 
-#   Neste módulo, temos regras do jogo em si, como checks, checkmates, promoções e os turnos.
-#   Com algumas pequenas modificações, é possível jogar o jogo neste módulo, através do terminal.
+# ----- NEW: types for promotion flow -----
+PromotionPending = Tuple[
+    Literal["PROMOTION"],
+    str,   # fen_before
+    int, int, int, int,  # x1, y1, x2, y2
+    bool,  # iswhite (side who moved)
+]
+TurnResult = Union[bool, PromotionPending]
+
 
 def clear_legal_hints() -> None:
     for line in Board.board:
@@ -21,7 +30,7 @@ def clear_legal_hints() -> None:
 
 def compute_legal_hints_for(x: int, y: int, iswhite: bool) -> None:
     """
-    ตั้งค่า flag legal_move / legal_capture / legal_castle ใ���้ Board.board
+    ตั้งค่า flag legal_move / legal_capture / legal_castle ใส่ Board.board
     โดยคำนวณจากกติกาจริง: เดินแล้วห้ามทำให้คิงตัวเองโดนเช็ค
     """
     clear_legal_hints()
@@ -45,7 +54,7 @@ def compute_legal_hints_for(x: int, y: int, iswhite: bool) -> None:
             s_moved = getattr(s_piece, "moved", None)
             e_moved = getattr(e_piece, "moved", None)
 
-            # สำหรับ pawn: ต้องจำ en_passantable ด้วย
+            # สำห��ับ pawn: ต้องจำ en_passantable ด้วย
             s_ep = getattr(s_piece, "en_passantable", None)
             side_sq = None
             side_piece = None
@@ -61,7 +70,7 @@ def compute_legal_hints_for(x: int, y: int, iswhite: bool) -> None:
 
             moved = move_piece(start, end)
             if not moved:
-                # restore (กันหลุดกรณีโค้ด move_piece เปลี่ยนอะไรแล้ว return False—โดยปกติไม่ควร)
+                # restore
                 start.piece = s_piece
                 end.piece = e_piece
                 if s_moved is not None:
@@ -111,7 +120,6 @@ def compute_legal_hints_for(x: int, y: int, iswhite: bool) -> None:
 
 
 def check_for_check(iswhite: bool) -> bool:
-    # find the king
     king_square = None
     for line in Board.board:
         for square in line:
@@ -124,7 +132,6 @@ def check_for_check(iswhite: bool) -> bool:
     if king_square is None:
         return False
 
-    # check if any piece has a path to the king
     for line in Board.board:
         for square in line:
             if square.piece.iswhite == king_square.piece.iswhite or isinstance(square.piece, EmptySquare):
@@ -157,11 +164,29 @@ def end_turn(iswhite: bool) -> None:
             if square.piece.iswhite != iswhite and isinstance(square.piece, Pawn):
                 square.piece.en_passantable = False
 
-    # promotions (โปรเจกต์คุณ promote เป็น Queen เสมอ)
-    line = 7 if iswhite else 0
-    for square in Board.board[line]:
-        if isinstance(square.piece, Pawn):
-            square.piece = Queen(iswhite)
+    # NOTE: promotion ถูกย้ายออกไปให้ UI เลือกก่อน
+
+
+# ----- NEW: promotion helpers -----
+def needs_promotion(x: int, y: int, iswhite: bool) -> bool:
+    p = Board.board[x][y].piece
+    if not isinstance(p, Pawn):
+        return False
+    return (iswhite and x == 7) or ((not iswhite) and x == 0)
+
+
+def apply_promotion(x: int, y: int, iswhite: bool, promote_to: str) -> None:
+    promote_to = promote_to.lower()
+    if promote_to == "q":
+        Board.board[x][y].piece = Queen(iswhite)
+    elif promote_to == "r":
+        Board.board[x][y].piece = Rook(iswhite)
+    elif promote_to == "b":
+        Board.board[x][y].piece = Bishop(iswhite)
+    elif promote_to == "n":
+        Board.board[x][y].piece = Knight(iswhite)
+    else:
+        raise ValueError(f"Invalid promotion piece: {promote_to}")
 
 
 def check_for_checkmate(iswhite):
@@ -185,60 +210,48 @@ def check_for_checkmate(iswhite):
                         Board.board[a][b].piece = start_piece
                         return False
 
-                    # garantees en_passantable correct
                     if hasattr(Board.board[a][b].piece, "en_passantable"):
                         Board.board[a][b].piece.en_passantable = False
     return True
 
 
-def turn(x1, y1, x2, y2, iswhite, check=False):
+def turn(x1, y1, x2, y2, iswhite, check=False) -> TurnResult:
     start: Square = Board.board[x1][y1]
     end: Square = Board.board[x2][y2]
 
-    # FEN ก่อนเดิน เพื่อให้ python-chess สร้าง SAN ถูกเต็มกติกา
     fen_before = to_fen(side_to_move_iswhite=iswhite)
 
-    # select the pieces to reverse movement if check
     s_piece = start.piece
     e_piece = end.piece
 
-    # save piece movement property
     s_moved = s_piece.moved
     e_moved = e_piece.moved
 
     if start.piece.iswhite == iswhite:
         if move_piece(start, end):
-            # if move creates check in its own king, it's illegal
             if check_for_check(iswhite):
-                # reverse movement
                 Board.board[start.x][start.y].piece = s_piece
                 Board.board[end.x][end.y].piece = e_piece
                 Board.board[start.x][start.y].piece.moved = s_moved
                 Board.board[end.x][end.y].piece.moved = e_moved
                 return False
 
-            # promotion flag สำหรับ SAN (python-chess ต้องรู้ก่อน)
-            promotion = None
-            moved_piece = Board.board[x2][y2].piece
-            if isinstance(moved_piece, Pawn):
-                if (iswhite and x2 == 7) or ((not iswhite) and x2 == 0):
-                    promotion = "q"
+            # ----- NEW: stop here if promotion is needed -----
+            if needs_promotion(x2, y2, iswhite):
+                return ("PROMOTION", fen_before, x1, y1, x2, y2, iswhite)
 
-            # บันทึก SAN (ก่อน end_turn ที่จะเปลี่ยนชิ้นบนกระดาน)
+            # บันทึก SAN (ไม่มี promotion)
             SAN_HISTORY.push_from_fen_and_coords(
                 fen_before_move=fen_before,
                 x1=x1, y1=y1, x2=x2, y2=y2,
-                promotion=promotion,
+                promotion=None,
             )
 
-            # promotions and reset en_passantable
             end_turn(iswhite)
 
-            # check for checkmate on enemy king
             other_iswhite = not iswhite
             if check_for_check(other_iswhite):
                 if check_for_checkmate(other_iswhite):
-                    # if checkmate, mated king becomes red
                     for i in range(64):
                         if (
                             isinstance(Board.board[i // 8][i % 8].piece, King)
@@ -247,12 +260,3 @@ def turn(x1, y1, x2, y2, iswhite, check=False):
                             Board.board[i // 8][i % 8].piece.selected = True
             return True
     return False
-
-
-def main():
-    Board.create_board()
-    Board.print_board()
-
-
-if __name__ == "__main__":
-    main()
