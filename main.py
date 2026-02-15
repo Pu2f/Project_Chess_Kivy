@@ -1,11 +1,18 @@
-from chess_core.rules import *
+from chess_core.rules import turn, SAN_HISTORY
+from chess_core.board import Board
+from chess_core.square import EmptySquare
+from chess_core.pieces import King, Queen, Rook, Bishop, Knight, Pawn
+
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 from kivy.properties import StringProperty
 
-# init model
+from chess_ui.font_piece_renderer import ChessCasesRenderer
+from chess_ui.square_widget import SquareWidget
+
+# init model (สำคัญ: ใน repo คุณเป็น Board.create_board())
 Board.create_board()
 
 
@@ -13,146 +20,105 @@ class ChessGame(BoxLayout):
     pass
 
 
+def piece_to_letter(piece) -> str:
+    if isinstance(piece, EmptySquare):
+        return "."
+    if isinstance(piece, King):
+        return "K" if piece.iswhite else "k"
+    if isinstance(piece, Queen):
+        return "Q" if piece.iswhite else "q"
+    if isinstance(piece, Rook):
+        return "R" if piece.iswhite else "r"
+    if isinstance(piece, Bishop):
+        return "B" if piece.iswhite else "b"
+    if isinstance(piece, Knight):
+        return "N" if piece.iswhite else "n"
+    if isinstance(piece, Pawn):
+        return "P" if piece.iswhite else "p"
+    return "."
+
+
 class BoardGrid(GridLayout):
-    # มุมมองปัจจุบัน
-    iswhite = True
-    ui_iswhite = StringProperty("images/white-king.png")
-
-    # selection state
-    selected = False
-    s_x = None
-    s_y = None
-
-    # move list (SAN) แสดงด้านขวา
     move_list_text = StringProperty("")
-
-    w, h = Window._get_size()
-    board_size = h if w > h else w
-
-    row_force_default = True
-    col_force_default = True
-    row_default_height = board_size / 8
-    col_default_width = board_size / 8
-
-    # 8x8 image properties
-    s00 = StringProperty(Board.board[0][0].piece.image)
-    s01 = StringProperty(Board.board[0][1].piece.image)
-    s02 = StringProperty(Board.board[0][2].piece.image)
-    s03 = StringProperty(Board.board[0][3].piece.image)
-    s04 = StringProperty(Board.board[0][4].piece.image)
-    s05 = StringProperty(Board.board[0][5].piece.image)
-    s06 = StringProperty(Board.board[0][6].piece.image)
-    s07 = StringProperty(Board.board[0][7].piece.image)
-
-    s10 = StringProperty(Board.board[1][0].piece.image)
-    s11 = StringProperty(Board.board[1][1].piece.image)
-    s12 = StringProperty(Board.board[1][2].piece.image)
-    s13 = StringProperty(Board.board[1][3].piece.image)
-    s14 = StringProperty(Board.board[1][4].piece.image)
-    s15 = StringProperty(Board.board[1][5].piece.image)
-    s16 = StringProperty(Board.board[1][6].piece.image)
-    s17 = StringProperty(Board.board[1][7].piece.image)
-
-    s20 = StringProperty(Board.board[2][0].piece.image)
-    s21 = StringProperty(Board.board[2][1].piece.image)
-    s22 = StringProperty(Board.board[2][2].piece.image)
-    s23 = StringProperty(Board.board[2][3].piece.image)
-    s24 = StringProperty(Board.board[2][4].piece.image)
-    s25 = StringProperty(Board.board[2][5].piece.image)
-    s26 = StringProperty(Board.board[2][6].piece.image)
-    s27 = StringProperty(Board.board[2][7].piece.image)
-
-    s30 = StringProperty(Board.board[3][0].piece.image)
-    s31 = StringProperty(Board.board[3][1].piece.image)
-    s32 = StringProperty(Board.board[3][2].piece.image)
-    s33 = StringProperty(Board.board[3][3].piece.image)
-    s34 = StringProperty(Board.board[3][4].piece.image)
-    s35 = StringProperty(Board.board[3][5].piece.image)
-    s36 = StringProperty(Board.board[3][6].piece.image)
-    s37 = StringProperty(Board.board[3][7].piece.image)
-
-    s40 = StringProperty(Board.board[4][0].piece.image)
-    s41 = StringProperty(Board.board[4][1].piece.image)
-    s42 = StringProperty(Board.board[4][2].piece.image)
-    s43 = StringProperty(Board.board[4][3].piece.image)
-    s44 = StringProperty(Board.board[4][4].piece.image)
-    s45 = StringProperty(Board.board[4][5].piece.image)
-    s46 = StringProperty(Board.board[4][6].piece.image)
-    s47 = StringProperty(Board.board[4][7].piece.image)
-
-    s50 = StringProperty(Board.board[5][0].piece.image)
-    s51 = StringProperty(Board.board[5][1].piece.image)
-    s52 = StringProperty(Board.board[5][2].piece.image)
-    s53 = StringProperty(Board.board[5][3].piece.image)
-    s54 = StringProperty(Board.board[5][4].piece.image)
-    s55 = StringProperty(Board.board[5][5].piece.image)
-    s56 = StringProperty(Board.board[5][6].piece.image)
-    s57 = StringProperty(Board.board[5][7].piece.image)
-
-    s60 = StringProperty(Board.board[6][0].piece.image)
-    s61 = StringProperty(Board.board[6][1].piece.image)
-    s62 = StringProperty(Board.board[6][2].piece.image)
-    s63 = StringProperty(Board.board[6][3].piece.image)
-    s64 = StringProperty(Board.board[6][4].piece.image)
-    s65 = StringProperty(Board.board[6][5].piece.image)
-    s66 = StringProperty(Board.board[6][6].piece.image)
-    s67 = StringProperty(Board.board[6][7].piece.image)
-
-    s70 = StringProperty(Board.board[7][0].piece.image)
-    s71 = StringProperty(Board.board[7][1].piece.image)
-    s72 = StringProperty(Board.board[7][2].piece.image)
-    s73 = StringProperty(Board.board[7][3].piece.image)
-    s74 = StringProperty(Board.board[7][4].piece.image)
-    s75 = StringProperty(Board.board[7][5].piece.image)
-    s76 = StringProperty(Board.board[7][6].piece.image)
-    s77 = StringProperty(Board.board[7][7].piece.image)
-
-    def ui_to_model(self, x, y):
-        if self.iswhite:
-            return x, y
-        return 7 - x, 7 - y
-
-    def update_images(self):
-        for ui_x in range(8):
-            for ui_y in range(8):
-                mx, my = self.ui_to_model(ui_x, ui_y)
-                prop = f"s{ui_x}{ui_y}"
-                setattr(self, prop, Board.board[mx][my].piece.get_selected_image())
-
-    def click(self, x, y):
-        mx, my = self.ui_to_model(x, y)
-
-        if not BoardGrid.selected:
-            BoardGrid.s_x = mx
-            BoardGrid.s_y = my
-            BoardGrid.selected = True
-            Board.board[mx][my].piece.selected = True
-            self.update_images()
-            return
-
-        moved = turn(BoardGrid.s_x, BoardGrid.s_y, mx, my, BoardGrid.iswhite)
-
-        if moved:
-            BoardGrid.iswhite = not BoardGrid.iswhite
-            self.ui_iswhite = (
-                "images/black-king.png"
-                if self.ui_iswhite == "images/white-king.png"
-                else "images/white-king.png"
-            )
-
-        # update SAN panel
-        self.move_list_text = SAN_HISTORY.formatted()
-
-        BoardGrid.selected = False
-        Board.board[BoardGrid.s_x][BoardGrid.s_y].piece.selected = False
-        Board.board[mx][my].piece.selected = False
-        self.update_images()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 8
-        self.update_images()
+
+        self.iswhite = True
+        self.view_iswhite = self.iswhite
+        
+        self.selected = False
+        self.s_x = None
+        self.s_y = None
+
+        w, h = Window._get_size()
+        self.board_size = h if w > h else w
+        self.square_size = int(self.board_size / 8)
+
+        self.renderer = ChessCasesRenderer()
+        self.renderer.ensure_cache(self.square_size)
+
+        self._squares = []
+        for ui_row in range(8):
+            for ui_col in range(8):
+                sw = SquareWidget(
+                    ui_x=ui_row,
+                    ui_y=ui_col,
+                    ui_to_model=self.ui_to_model,
+                    on_click_model=self.click_model,
+                    board_getter=lambda: Board.board,
+                    piece_letter_getter=piece_to_letter,
+                    renderer=self.renderer,
+                )
+                self._squares.append(sw)
+                self.add_widget(sw)
+
+        self.refresh_all()
         self.move_list_text = SAN_HISTORY.formatted()
+
+    def ui_to_model(self, ui_row: int, ui_col: int):
+        """
+        GridLayout เติม widget จากบนลงล่าง แต่โมเดล Board.board[x][y] ของคุณ:
+        x=0 คือแถวล่าง (rank1)
+        x=7 คือแถวบน (rank8)
+
+        ดังนั้นต้องกลับแกนแถวก่อน: model_x = 7 - ui_row
+        แล้วค่อย flip ทั้งกระดานตามฝั่งเดิน (view_iswhite)
+        """
+        mx = 7 - ui_row
+        my = ui_col
+
+        if self.view_iswhite:
+            return mx, my
+
+        return 7 - mx, 7 - my
+
+    def refresh_all(self):
+        for sw in self._squares:
+            sw.refresh()
+
+    def click_model(self, mx, my):
+        if not self.selected:
+            self.s_x = mx
+            self.s_y = my
+            self.selected = True
+            Board.board[mx][my].piece.selected = True
+            self.refresh_all()
+            return
+
+        moved = turn(self.s_x, self.s_y, mx, my, self.iswhite)
+
+        if moved:
+            self.iswhite = not self.iswhite
+            self.view_iswhite = self.iswhite  # flip ตามฝั่งเดิน
+
+        self.move_list_text = SAN_HISTORY.formatted()
+
+        self.selected = False
+        Board.board[self.s_x][self.s_y].piece.selected = False
+        Board.board[mx][my].piece.selected = False
+        self.refresh_all()
 
 
 class Ui(BoxLayout):
