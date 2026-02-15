@@ -4,6 +4,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.core.window import Window
 from kivy.properties import StringProperty
+from images import *
 
 # init model
 Board.create_board()
@@ -14,6 +15,10 @@ class ChessGame(BoxLayout):
 
 
 class BoardGrid(GridLayout):
+
+    cols = 8
+    rows = 8
+    
     # มุมมองปัจจุบัน
     iswhite = True
     ui_iswhite = StringProperty("images/white-king.png")
@@ -33,6 +38,81 @@ class BoardGrid(GridLayout):
     col_force_default = True
     row_default_height = board_size / 8
     col_default_width = board_size / 8
+
+
+
+    def clear_hints(self):
+        self.update_images()
+
+
+
+    def show_hints(self, mx, my):
+            self.clear_hints() # ล้างสถานะเก่าก่อน
+
+            from chess_core.board import has_path_rook, has_path_bishop, pawn_can_capture
+            from chess_core.pieces import Rook, Bishop, Queen, Knight, King, Pawn
+            from chess_core.square import EmptySquare
+
+            start_square = Board.board[mx][my]
+            piece = start_square.piece
+
+            # วนลูปตรวจสอบทุกช่องในกระดาน
+            for r in range(8):
+                for c in range(8):
+                    if r == mx and c == my:
+                        continue
+
+                    end_square = Board.board[r][c]
+                    target_piece = end_square.piece
+                    legal = False
+
+                    # ตรวจสอบกฎการเดินตามประเภทของหมาก
+                    if isinstance(piece, Rook):
+                        legal = has_path_rook(start_square, end_square)
+                    elif isinstance(piece, Bishop):
+                        legal = has_path_bishop(start_square, end_square)
+                    elif isinstance(piece, Queen):
+                        legal = has_path_rook(start_square, end_square) or has_path_bishop(start_square, end_square)
+                    elif isinstance(piece, Knight):
+                        legal = piece.possible_move(start_square, end_square)
+                    elif isinstance(piece, King):
+                        # รวมการเดินปกติและการ Castle
+                        from chess_core.board import can_castle
+                        legal = piece.possible_move(start_square, end_square) or can_castle(start_square, end_square)
+                    elif isinstance(piece, Pawn):
+                        # เดินไปที่ว่าง
+                        if piece.possible_move(start_square, end_square) and isinstance(target_piece, EmptySquare):
+                            legal = True
+                        # เดินไปกิน (รวม En Passant)
+                        elif pawn_can_capture(start_square, end_square):
+                            legal = True
+
+                    if legal:
+                        # ตั้งค่าสถานะ hint หรือ capture ใน Model
+                        if isinstance(target_piece, EmptySquare):
+                            # กรณีเดินไปช่องว่าง หรือกิน En Passant (ช่องที่คลิกอาจจะว่าง)
+                            # ตรวจสอบ En Passant เพิ่มเติมเพื่อให้จุดแสดงถูกช่อง
+                            if isinstance(piece, Pawn) and pawn_can_capture(start_square, end_square) and isinstance(target_piece, EmptySquare):
+                                Board.board[r][c].piece.capture = True
+                            else:
+                                Board.board[r][c].piece.hint = True
+                        else:
+                            Board.board[r][c].piece.capture = True
+
+    def is_hint(self, x, y):
+        mx, my = self.ui_to_model(x, y)
+        return getattr(Board.board[mx][my].piece, 'hint', False)
+
+    def is_capture(self, x, y):
+        mx, my = self.ui_to_model(x, y)
+        return getattr(Board.board[mx][my].piece, 'capture', False)
+
+    def clear_hints(self):
+        """ล้างสถานะจุดสีทั้งหมดบนกระดาน"""
+        for x in range(8):
+            for y in range(8):
+                Board.board[x][y].piece.hint = False
+                Board.board[x][y].piece.capture = False
 
     # 8x8 image properties
     s00 = StringProperty(Board.board[0][0].piece.image)
@@ -120,33 +200,40 @@ class BoardGrid(GridLayout):
                 setattr(self, prop, Board.board[mx][my].piece.get_selected_image())
 
     def click(self, x, y):
-        mx, my = self.ui_to_model(x, y)
+            mx, my = self.ui_to_model(x, y)
 
-        if not BoardGrid.selected:
-            BoardGrid.s_x = mx
-            BoardGrid.s_y = my
-            BoardGrid.selected = True
-            Board.board[mx][my].piece.selected = True
+            if not BoardGrid.selected:
+                # ถ้าเลือกหมากฝั่งตัวเอง
+                if Board.board[mx][my].piece.iswhite == BoardGrid.iswhite:
+                    BoardGrid.s_x = mx
+                    BoardGrid.s_y = my
+                    BoardGrid.selected = True
+                    Board.board[mx][my].piece.selected = True
+                    
+                    # แสดงจุดเขียว/แดง
+                    self.show_hints(mx, my)
+                    
+                    self.update_images()
+                return
+
+            # พยายามเดินหมาก
+            moved = turn(BoardGrid.s_x, BoardGrid.s_y, mx, my, BoardGrid.iswhite)
+
+            if moved:
+                BoardGrid.iswhite = not BoardGrid.iswhite
+                self.ui_iswhite = (
+                    "images/black-king.png"
+                    if self.ui_iswhite == "images/white-king.png"
+                    else "images/white-king.png"
+                )
+
+            # เคลียร์สถานะหลังเดินหรือยกเลิก
+            self.clear_hints() # ล้างจุดสีทั้งหมด
+            BoardGrid.selected = False
+            Board.board[BoardGrid.s_x][BoardGrid.s_y].piece.selected = False
             self.update_images()
-            return
+            self.move_list_text = SAN_HISTORY.formatted()
 
-        moved = turn(BoardGrid.s_x, BoardGrid.s_y, mx, my, BoardGrid.iswhite)
-
-        if moved:
-            BoardGrid.iswhite = not BoardGrid.iswhite
-            self.ui_iswhite = (
-                "images/black-king.png"
-                if self.ui_iswhite == "images/white-king.png"
-                else "images/white-king.png"
-            )
-
-        # update SAN panel
-        self.move_list_text = SAN_HISTORY.formatted()
-
-        BoardGrid.selected = False
-        Board.board[BoardGrid.s_x][BoardGrid.s_y].piece.selected = False
-        Board.board[mx][my].piece.selected = False
-        self.update_images()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

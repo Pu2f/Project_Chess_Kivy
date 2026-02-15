@@ -11,6 +11,9 @@ class EmptySquare:
         self.selected = False
         self.selected_image = "images/selected-clear.png"
 
+        self.hint = False
+        self.capture = False
+
     def __str__(self) -> str:
         return '.'
     
@@ -18,8 +21,15 @@ class EmptySquare:
         return False
     
     def get_selected_image(self):
+        if self.capture:
+            return "images/red-dot.png"
+
+        if self.hint:
+            return "images/green-dot.png"
+
         if self.selected:
             return self.selected_image
+
         return self.image
 
 
@@ -29,6 +39,10 @@ class Square:
 
         self.x = x
         self.y = y
+        
+        self.hint = False
+        self.capture = False
+        
         if piece == None:
             self.piece = EmptySquare()
         else:
