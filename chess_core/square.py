@@ -29,6 +29,12 @@ class Square:
 
         self.x = x
         self.y = y
+
+        # UI hints (show legal moves)
+        self.legal_move = False       # ช่องว่างที่เดินได้
+        self.legal_capture = False    # ช่องที่กินได้
+        self.legal_castle = False     # ช่อง castling (ปลายทาง king)
+
         if piece == None:
             self.piece = EmptySquare()
         else:

@@ -11,6 +11,105 @@ SAN_HISTORY = SanHistory()
 #   Neste módulo, temos regras do jogo em si, como checks, checkmates, promoções e os turnos.
 #   Com algumas pequenas modificações, é possível jogar o jogo neste módulo, através do terminal.
 
+def clear_legal_hints() -> None:
+    for line in Board.board:
+        for sq in line:
+            sq.legal_move = False
+            sq.legal_capture = False
+            sq.legal_castle = False
+
+
+def compute_legal_hints_for(x: int, y: int, iswhite: bool) -> None:
+    """
+    ตั้งค่า flag legal_move / legal_capture / legal_castle ใ���้ Board.board
+    โดยคำนวณจากกติกาจริง: เดินแล้วห้ามทำให้คิงตัวเองโดนเช็ค
+    """
+    clear_legal_hints()
+
+    start: Square = Board.board[x][y]
+    if isinstance(start.piece, EmptySquare):
+        return
+    if start.piece.iswhite != iswhite:
+        return
+
+    for tx in range(8):
+        for ty in range(8):
+            if tx == x and ty == y:
+                continue
+
+            end: Square = Board.board[tx][ty]
+
+            # snapshot สภาพก่อนลองเดิน (ขั้นต่ำที่จำเป็น)
+            s_piece = start.piece
+            e_piece = end.piece
+            s_moved = getattr(s_piece, "moved", None)
+            e_moved = getattr(e_piece, "moved", None)
+
+            # สำหรับ pawn: ต้องจำ en_passantable ด้วย
+            s_ep = getattr(s_piece, "en_passantable", None)
+            side_sq = None
+            side_piece = None
+            side_moved = None
+            side_ep = None
+
+            # เผื่อ en passant: ถ้าปลายทางว่างและเป็น pawn capture pattern
+            if isinstance(s_piece, Pawn) and isinstance(e_piece, EmptySquare) and pawn_can_capture(start, end):
+                side_sq = Board.board[x][ty]
+                side_piece = side_sq.piece
+                side_moved = getattr(side_piece, "moved", None)
+                side_ep = getattr(side_piece, "en_passantable", None)
+
+            moved = move_piece(start, end)
+            if not moved:
+                # restore (กันหลุดกรณีโค้ด move_piece เปลี่ยนอะไรแล้ว return False—โดยปกติไม่ควร)
+                start.piece = s_piece
+                end.piece = e_piece
+                if s_moved is not None:
+                    start.piece.moved = s_moved
+                if e_moved is not None and not isinstance(end.piece, EmptySquare):
+                    end.piece.moved = e_moved
+                if s_ep is not None and isinstance(start.piece, Pawn):
+                    start.piece.en_passantable = s_ep
+                if side_sq is not None:
+                    side_sq.piece = side_piece
+                    if side_moved is not None and not isinstance(side_sq.piece, EmptySquare):
+                        side_sq.piece.moved = side_moved
+                    if side_ep is not None and isinstance(side_sq.piece, Pawn):
+                        side_sq.piece.en_passantable = side_ep
+                continue
+
+            illegal = check_for_check(iswhite)
+
+            # revert board กลับเหมือนเดิม
+            Board.board[x][y].piece = s_piece
+            Board.board[tx][ty].piece = e_piece
+            Board.board[x][y].piece.moved = s_moved
+            if not isinstance(Board.board[tx][ty].piece, EmptySquare) and e_moved is not None:
+                Board.board[tx][ty].piece.moved = e_moved
+
+            if isinstance(Board.board[x][y].piece, Pawn) and s_ep is not None:
+                Board.board[x][y].piece.en_passantable = s_ep
+
+            if side_sq is not None:
+                side_sq.piece = side_piece
+                if not isinstance(side_sq.piece, EmptySquare) and side_moved is not None:
+                    side_sq.piece.moved = side_moved
+                if isinstance(side_sq.piece, Pawn) and side_ep is not None:
+                    side_sq.piece.en_passantable = side_ep
+
+            if illegal:
+                continue
+
+            # mark hint
+            is_castle = isinstance(s_piece, King) and (abs(ty - y) == 2) and (tx == x)
+            if is_castle:
+                Board.board[tx][ty].legal_castle = True
+            elif isinstance(e_piece, EmptySquare):
+                Board.board[tx][ty].legal_move = True
+            else:
+                Board.board[tx][ty].legal_capture = True
+
+
 def check_for_check(iswhite: bool) -> bool:
     # find the king
     king_square = None

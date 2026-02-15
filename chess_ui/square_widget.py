@@ -13,6 +13,7 @@ class SquareWidget(ButtonBehavior, Widget):
     """
     ช่อง 1 ช่อง (โปร่งใส) วาดเฉพาะ:
     - highlight เมื่อ selected
+    - legal move hints (จุด/กรอบ)
     - ตัวหมากแบบ 2-layer จาก ChessCasesRenderer บน canvas.after
     """
 
@@ -37,6 +38,7 @@ class SquareWidget(ButtonBehavior, Widget):
         self._renderer = renderer
 
         with self.canvas:
+            # selected highlight (เขียว)
             self._hl_color = Color(0, 0, 0, 0)
             self._hl_line = Line(rectangle=(*self.pos, *self.size), width=2.0)
 
@@ -50,15 +52,38 @@ class SquareWidget(ButtonBehavior, Widget):
         self._hl_line.rectangle = (*self.pos, *self.size)
 
         mx, my = self._ui_to_model(self.ui_x, self.ui_y)
-        piece = self._board_getter()[mx][my].piece
+        sq = self._board_getter()[mx][my]
+        piece = sq.piece
 
-        # highlight จาก flag เดิมในโปรเจกต์คุณ
+        # highlight selected จาก flag เดิมในโปรเจกต์คุณ
         is_selected = bool(getattr(piece, "selected", False))
         self._hl_color.rgba = (0.2, 0.85, 0.2, 0.9) if is_selected else (0, 0, 0, 0)
 
-        # วาดตัวหมากบน canvas.after
+        # วาดตัวหมาก + hints บน canvas.after
         self.canvas.after.clear()
 
+        # ---- NEW: legal move hints ----
+        cx = self.x + self.width / 2
+        cy = self.y + self.height / 2
+        radius = min(self.width, self.height) * 0.18
+
+        with self.canvas.after:
+            # capture = กรอบแดงบาง
+            if bool(getattr(sq, "legal_capture", False)):
+                Color(0.9, 0.1, 0.1, 0.9)
+                Line(rectangle=(self.x + 3, self.y + 3, self.width - 6, self.height - 6), width=1.6)
+
+            # move = จุดฟ้าอ่อน
+            if bool(getattr(sq, "legal_move", False)):
+                Color(0.2, 0.6, 1.0, 0.65)
+                Line(circle=(cx, cy, radius), width=2.0)
+
+            # castle = จุดม่วง
+            if bool(getattr(sq, "legal_castle", False)):
+                Color(0.6, 0.2, 0.9, 0.75)
+                Line(circle=(cx, cy, radius * 1.05), width=2.2)
+
+        # ---- draw pieces ----
         piece_letter = self._piece_letter_getter(piece)
         layers = self._renderer.get_layers(piece_letter)
         if not layers:

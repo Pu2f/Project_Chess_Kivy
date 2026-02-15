@@ -1,4 +1,4 @@
-from chess_core.rules import turn, SAN_HISTORY
+from chess_core.rules import turn, SAN_HISTORY, compute_legal_hints_for, clear_legal_hints
 from chess_core.board import Board
 from chess_core.square import EmptySquare
 from chess_core.pieces import King, Queen, Rook, Bishop, Knight, Pawn
@@ -78,14 +78,6 @@ class BoardGrid(GridLayout):
         self.move_list_text = SAN_HISTORY.formatted()
 
     def ui_to_model(self, ui_row: int, ui_col: int):
-        """
-        GridLayout เติม widget จากบนลงล่าง แต่โมเดล Board.board[x][y] ของคุณ:
-        x=0 คือแถวล่าง (rank1)
-        x=7 คือแถวบน (rank8)
-
-        ดังนั้นต้องกลับแกนแถวก่อน: model_x = 7 - ui_row
-        แล้วค่อย flip ทั้งกระดานตามฝั่งเดิน (view_iswhite)
-        """
         mx = 7 - ui_row
         my = ui_col
 
@@ -103,11 +95,21 @@ class BoardGrid(GridLayout):
             self.s_x = mx
             self.s_y = my
             self.selected = True
+
+            # selection highlight เดิม
             Board.board[mx][my].piece.selected = True
+
+            # NEW: show legal moves
+            compute_legal_hints_for(mx, my, self.iswhite)
+
             self.refresh_all()
             return
 
+        # กดครั้งที่ 2 = พยายามเดิน
         moved = turn(self.s_x, self.s_y, mx, my, self.iswhite)
+
+        # เคลียร์ legal hints ไม่ว่ามูฟสำเร็จหรือไม่ (กันค้าง)
+        clear_legal_hints()
 
         if moved:
             self.iswhite = not self.iswhite
