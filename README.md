@@ -16,10 +16,13 @@
 
         - python-chess (สำหรับระบบ SAN)
 
+        -chess libraly
+
     ติดตั้งผ่านคำสั่ง:
 
         pip install kivy
         pip install python-chess
+        pip install chess
 
 ### ▶ วิธีรันโปรแกรม (Running)
 
@@ -52,4 +55,5 @@
     1.นายฉัตรชนก นิโครธานนท์ 6810110557
     2.นายอาณัส อาเก๊ะ 6810110755
     3.นายพัทธวัฒน์ พลเพชร 681011023
+
 
