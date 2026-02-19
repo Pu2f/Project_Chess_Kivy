@@ -5,17 +5,19 @@ ChessGame:
 
     BoardGrid:
         id: BoardGrid
+        size_hint: 1, 1
 
         canvas.before:
             Rectangle:
-                size: self.board_size, self.board_size
+                pos: self.pos
+                size: self.size
                 source: "images/Board.png"
 
     Ui:
 
         orientation: "vertical"
-        size_hint: None, None
-        size: self.ui_size_x, self.ui_size_y
+        size_hint: 0.35, 1
+        
 
         canvas.before:
             Color:

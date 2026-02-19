@@ -1,6 +1,12 @@
 from chess_core.rules import (
-    turn, SAN_HISTORY, compute_legal_hints_for, clear_legal_hints,
-    apply_promotion, end_turn, check_for_check, check_for_checkmate
+    turn,
+    SAN_HISTORY,
+    compute_legal_hints_for,
+    clear_legal_hints,
+    apply_promotion,
+    end_turn,
+    check_for_check,
+    check_for_checkmate,
 )
 from chess_core.board import Board
 from chess_core.square import EmptySquare
@@ -101,7 +107,9 @@ class BoardGrid(GridLayout):
     def _update_move_list(self) -> None:
         base = SAN_HISTORY.formatted()
         if GAME_STATE.result_text:
-            self.move_list_text = base + ("\n\n" if base else "") + GAME_STATE.result_text
+            self.move_list_text = (
+                base + ("\n\n" if base else "") + GAME_STATE.result_text
+            )
         else:
             self.move_list_text = base
 
@@ -166,7 +174,10 @@ class BoardGrid(GridLayout):
 
         SAN_HISTORY.push_from_fen_and_coords(
             fen_before_move=fen_before,
-            x1=x1, y1=y1, x2=x2, y2=y2,
+            x1=x1,
+            y1=y1,
+            x2=x2,
+            y2=y2,
             promotion=choice,
         )
 
